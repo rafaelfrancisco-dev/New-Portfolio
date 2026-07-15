@@ -1,0 +1,14 @@
+# Local tool binaries (installed by `make tools`)
+/bin/
+
+# Build output & live-reload artifacts
+/tmp/
+/go-port
+
+# OpenAPI spec — fuego regenerates it on every server start
+/doc/
+
+# SQLite databases (app data + DBOS system db)
+*.db
+*.db-shm
+*.db-wal

@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "bin/templ generate && bin/tailwindcss -i static/css/input.css -o static/css/app.css && go build -o ./tmp/server ./cmd/server"
+bin = "./tmp/server"
+include_ext = ["go", "templ", "sql", "css"]
+exclude_regex = ["_templ\\.go$", "\\.sql\\.go$", "app\\.css$"]
+exclude_dir = ["tmp", "bin"]
+
+[log]
+main_only = true

@@ -1,0 +1,9 @@
+.git
+bin
+tmp
+doc
+*.db
+*.db-shm
+*.db-wal
+Dockerfile
+.dockerignore

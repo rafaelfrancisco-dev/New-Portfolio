@@ -1,0 +1,6 @@
+@import "tailwindcss" source(none);
+
+/* Only scan the templ views for class names — without this, Tailwind v4
+   scans every non-gitignored file in the repo, so even a word like
+   "table" in README prose would add a .table utility to the output. */
+@source "../../internal/views";
