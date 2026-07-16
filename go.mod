@@ -51,6 +51,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
+	github.com/yuin/goldmark v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect

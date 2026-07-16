@@ -1,0 +1,54 @@
+package views
+
+import "go-port/internal/db"
+
+templ HomePage(posts []db.Post) {
+	@Layout("Rafael Francisco — iOS apps & photography", "~/coimbra-pt", "") {
+		<div class="px-6 md:px-11 pt-14 pb-11 flex flex-col gap-[18px] border-b border-line">
+			<h1 class="m-0 text-[42px] leading-[1.15] font-semibold tracking-[-.01em] max-w-[26ch]">I build iOS apps and photograph the wild bits of Portugal.</h1>
+			<p class="m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty">Mobile Tech Lead by day, indie developer and amateur photographer the rest of the time. Everything here is either shipped, printed, or written down.</p>
+		</div>
+		<div class="grid grid-cols-1 md:grid-cols-2">
+			<div class="px-6 md:px-11 py-9 border-b md:border-b-0 md:border-r border-line flex flex-col gap-4">
+				@SectionLabel("01 — SOFTWARE")
+				<div class="flex flex-col">
+					@homeProject("Bird Sound Identifier", "2021 · 4.8★")
+					@homeProject("Car Model Identifier", "2025 · AI")
+					@homeProject("Photo Location Recorder", "2026 · new")
+					@homeProject("Today in History", "2017 · iOS+Android")
+				</div>
+				<a href="/software" class="font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85">ls all_projects →</a>
+			</div>
+			<div class="flex flex-col">
+				<div class="px-6 md:px-11 pt-9 pb-4">
+					@SectionLabel("02 — PHOTOGRAPHY")
+				</div>
+				<a href="/photography" class="flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile flex items-center justify-center border border-line no-underline hover:opacity-85">
+					<span class="font-mono text-xs text-faint">[ photo — red kite in flight ]</span>
+				</a>
+				<div class="px-6 md:px-11 pt-4 pb-9 flex justify-between items-baseline gap-4">
+					<span class="text-sm text-muted">Landscapes &amp; wildlife · prints available</span>
+					<a href="/photography" class="font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85">open gallery →</a>
+				</div>
+			</div>
+		</div>
+		<div class="px-6 md:px-11 py-8 border-t border-line flex flex-col gap-[14px]">
+			@SectionLabel("03 — JOURNAL")
+			<div class="flex flex-col">
+				for _, p := range posts {
+					<a href={ templ.SafeURL("/journal/" + p.Slug) } class="no-underline text-inherit hover:opacity-85 flex gap-5 items-baseline py-[11px] border-b border-line last:border-b-0">
+						<span class="font-mono text-[12.5px] text-faint min-w-[88px]">{ p.PublishedAt.Format("2006-01-02") }</span>
+						<span class="text-[15.5px] font-semibold">{ p.Title }</span>
+					</a>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ homeProject(name string, meta string) {
+	<a href="/software" class="no-underline text-inherit hover:opacity-85 flex justify-between gap-3 py-[13px] border-b border-line last:border-b-0">
+		<span class="font-semibold text-[15px]">{ name }</span>
+		<span class="font-mono text-[12.5px] text-faint">{ meta }</span>
+	</a>
+}

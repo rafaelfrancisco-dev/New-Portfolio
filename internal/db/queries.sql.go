@@ -10,75 +10,125 @@ import (
 	"time"
 )
 
-const countCompletedBefore = `-- name: CountCompletedBefore :one
-SELECT COUNT(*) FROM todos WHERE completed = TRUE AND created_at < ?
+const countPostsByYear = `-- name: CountPostsByYear :many
+SELECT CAST(strftime('%Y', published_at) AS TEXT) AS year, COUNT(*) AS count
+FROM posts GROUP BY year ORDER BY year DESC
 `
 
-func (q *Queries) CountCompletedBefore(ctx context.Context, createdAt time.Time) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countCompletedBefore, createdAt)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
+type CountPostsByYearRow struct {
+	Year  string
+	Count int64
 }
 
-const createTodo = `-- name: CreateTodo :one
-INSERT INTO todos (title) VALUES (?) RETURNING id, title, completed, created_at
-`
-
-func (q *Queries) CreateTodo(ctx context.Context, title string) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, createTodo, title)
-	var i Todo
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Completed,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const deleteCompletedBefore = `-- name: DeleteCompletedBefore :execrows
-DELETE FROM todos WHERE completed = TRUE AND created_at < ?
-`
-
-func (q *Queries) DeleteCompletedBefore(ctx context.Context, createdAt time.Time) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteCompletedBefore, createdAt)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
-}
-
-const deleteTodo = `-- name: DeleteTodo :execrows
-DELETE FROM todos WHERE id = ?
-`
-
-func (q *Queries) DeleteTodo(ctx context.Context, id int64) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteTodo, id)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
-}
-
-const listTodos = `-- name: ListTodos :many
-SELECT id, title, completed, created_at FROM todos ORDER BY id DESC
-`
-
-func (q *Queries) ListTodos(ctx context.Context) ([]Todo, error) {
-	rows, err := q.db.QueryContext(ctx, listTodos)
+func (q *Queries) CountPostsByYear(ctx context.Context) ([]CountPostsByYearRow, error) {
+	rows, err := q.db.QueryContext(ctx, countPostsByYear)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Todo
+	var items []CountPostsByYearRow
 	for rows.Next() {
-		var i Todo
+		var i CountPostsByYearRow
+		if err := rows.Scan(&i.Year, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNewerPost = `-- name: GetNewerPost :one
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE published_at > ? ORDER BY published_at ASC LIMIT 1
+`
+
+func (q *Queries) GetNewerPost(ctx context.Context, publishedAt time.Time) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getNewerPost, publishedAt)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
+const getOlderPost = `-- name: GetOlderPost :one
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE published_at < ? ORDER BY published_at DESC LIMIT 1
+`
+
+func (q *Queries) GetOlderPost(ctx context.Context, publishedAt time.Time) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getOlderPost, publishedAt)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
+const getPostBySlug = `-- name: GetPostBySlug :one
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE slug = ?
+`
+
+func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPostBySlug, slug)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
+const listPosts = `-- name: ListPosts :many
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts ORDER BY published_at DESC
+`
+
+func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
 		if err := rows.Scan(
 			&i.ID,
+			&i.Slug,
 			&i.Title,
-			&i.Completed,
-			&i.CreatedAt,
+			&i.Category,
+			&i.Teaser,
+			&i.Lede,
+			&i.BodyMd,
+			&i.StoreUrl,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -93,18 +143,76 @@ func (q *Queries) ListTodos(ctx context.Context) ([]Todo, error) {
 	return items, nil
 }
 
-const toggleTodo = `-- name: ToggleTodo :one
-UPDATE todos SET completed = NOT completed WHERE id = ? RETURNING id, title, completed, created_at
+const listPostsByCategory = `-- name: ListPostsByCategory :many
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE category = ? ORDER BY published_at DESC
 `
 
-func (q *Queries) ToggleTodo(ctx context.Context, id int64) (Todo, error) {
-	row := q.db.QueryRowContext(ctx, toggleTodo, id)
-	var i Todo
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Completed,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) ListPostsByCategory(ctx context.Context, category string) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listPostsByCategory, category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Category,
+			&i.Teaser,
+			&i.Lede,
+			&i.BodyMd,
+			&i.StoreUrl,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentPosts = `-- name: ListRecentPosts :many
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts ORDER BY published_at DESC LIMIT ?
+`
+
+func (q *Queries) ListRecentPosts(ctx context.Context, limit int64) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listRecentPosts, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Category,
+			&i.Teaser,
+			&i.Lede,
+			&i.BodyMd,
+			&i.StoreUrl,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

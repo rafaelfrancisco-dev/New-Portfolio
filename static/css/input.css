@@ -4,3 +4,152 @@
    scans every non-gitignored file in the repo, so even a word like
    "table" in README prose would add a .table utility to the output. */
 @source "../../internal/views";
+
+/* Self-hosted IBM Plex (latin + latin-ext subsets, embedded in the binary).
+   The Sans file is a variable font covering weights 400–700. */
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-400-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-400-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-500-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-500-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-600-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-mono-600-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: "IBM Plex Sans";
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-sans-latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "IBM Plex Sans";
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url("/static/fonts/ibm-plex-sans-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Design tokens from the portfolio mockup. */
+@theme {
+	--font-sans: "IBM Plex Sans", Helvetica, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+	--color-bg: #191917;
+	--color-panel: #111110;
+	--color-line: #2e2d29;
+	--color-line-soft: #232220;
+	--color-line-strong: #3a3934;
+	--color-ink: #e9e6df;
+	--color-muted: #b5afa2;
+	--color-faint: #7d786d;
+	--color-code: #c9c4b8;
+	--color-code-bright: #cbc6ba;
+	--color-warm: #c08a72;
+	--color-tile-a: #22211e;
+	--color-tile-b: #282723;
+}
+
+/* Striped placeholder tile used wherever a photo has not loaded. */
+@utility bg-tile {
+	background: repeating-linear-gradient(45deg, var(--color-tile-a) 0 14px, var(--color-tile-b) 14px 28px);
+}
+
+/* Article bodies come from goldmark-rendered Markdown, so their inner
+   elements can't carry Tailwind classes. */
+.prose-article {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+}
+.prose-article p {
+	margin: 0;
+	font-size: 17px;
+	line-height: 1.75;
+	text-wrap: pretty;
+}
+.prose-article pre {
+	margin: 0;
+	padding: 18px 20px;
+	background: var(--color-panel);
+	border: 1px solid var(--color-line);
+	border-radius: 6px;
+	font: 13.5px/1.6 var(--font-mono);
+	color: var(--color-code);
+	overflow-x: auto;
+}
+.prose-article figure {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.prose-article figure .placeholder {
+	aspect-ratio: 16/9;
+	background: repeating-linear-gradient(45deg, var(--color-tile-a) 0 14px, var(--color-tile-b) 14px 28px);
+	border: 1px solid var(--color-line);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font: 12px var(--font-mono);
+	color: var(--color-faint);
+}
+.prose-article figcaption {
+	font: 12px var(--font-mono);
+	color: var(--color-faint);
+}
+.prose-article hr {
+	border: 0;
+	height: 1px;
+	background: var(--color-line);
+}
+.prose-article a {
+	color: var(--color-ink);
+}
+.prose-article code {
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+	color: var(--color-code-bright);
+}

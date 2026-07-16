@@ -1,0 +1,28 @@
+package views
+
+import "go-port/internal/content"
+
+templ SoftwarePage(projects []content.Project) {
+	@Layout("Rafael Francisco — Software", "~/software", "software") {
+		<div class="px-6 md:px-11 pt-12 pb-7 flex flex-col gap-[14px] border-b border-line">
+			@SectionLabel("01 — SOFTWARE")
+			<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Projects</h1>
+			<p class="m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty">Indie apps for iOS, watchOS and Android — most born from a walk in the woods or an itch nothing on the App Store scratched.</p>
+		</div>
+		for _, p := range projects {
+			<div class="grid grid-cols-1 md:grid-cols-[110px_1fr_340px_130px] gap-3 md:gap-6 items-baseline px-6 md:px-11 py-6 border-b border-line">
+				<span class="font-mono text-[12.5px] text-faint">{ p.Year }</span>
+				<span class="flex flex-col gap-1">
+					<span class="font-semibold text-[17px]">{ p.Name }</span>
+					<span class="font-mono text-xs text-faint">{ p.Tech }</span>
+				</span>
+				<span class="text-sm leading-[1.55] text-muted">{ p.Desc }</span>
+				if p.Retired {
+					<span class="font-mono font-semibold text-xs text-faint border border-line rounded px-2.5 py-1.5 text-center">retired</span>
+				} else {
+					<a href="#" class="font-mono font-semibold text-xs border border-line-strong rounded px-2.5 py-1.5 text-center no-underline hover:opacity-85">{ p.Store } ↗</a>
+				}
+			</div>
+		}
+	}
+}

@@ -1,0 +1,45 @@
+package views
+
+import (
+	"fmt"
+
+	"go-port/internal/db"
+)
+
+// ArticlePage renders one journal post. bodyHTML is goldmark-rendered
+// Markdown from the trusted posts table. older/newer may be nil at the ends
+// of the archive.
+templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post) {
+	@Layout("Rafael Francisco — "+post.Title, "~/journal/"+post.Slug, "journal") {
+		<article class="max-w-[720px] mx-auto px-6 pt-[52px] pb-[60px] flex flex-col gap-[22px]">
+			<div class="flex gap-[14px] font-mono text-[12.5px] text-faint">
+				<span>{ post.PublishedAt.Format("2006-01-02") }</span>
+				<span class="text-muted">{ post.Category }</span>
+				<span>{ fmt.Sprintf("· %d min read", readMinutes) }</span>
+			</div>
+			<h1 class="m-0 text-4xl leading-[1.2] font-semibold tracking-[-.01em] text-pretty">{ post.Title }</h1>
+			<p class="m-0 text-lg leading-[1.7] text-muted text-pretty">{ post.Lede }</p>
+			<div class="h-px bg-line"></div>
+			<div class="prose-article">
+				@templ.Raw(bodyHTML)
+			</div>
+			<div class="h-px bg-line"></div>
+			<div class="flex justify-between items-center gap-4 flex-wrap">
+				if post.StoreUrl != "" {
+					<a href={ templ.SafeURL(post.StoreUrl) } class="font-mono font-semibold text-[12.5px] text-ink no-underline hover:opacity-85 border border-line-strong rounded px-3 py-2">Get it on the App Store ↗</a>
+				} else {
+					<span></span>
+				}
+				<div class="flex gap-4 font-mono text-[12.5px] text-faint">
+					if older != nil {
+						<a href={ templ.SafeURL("/journal/" + older.Slug) } class="no-underline text-inherit hover:opacity-85">← older post</a>
+					}
+					<a href="/journal" class="no-underline text-inherit hover:opacity-85">all posts</a>
+					if newer != nil {
+						<a href={ templ.SafeURL("/journal/" + newer.Slug) } class="no-underline text-inherit hover:opacity-85">newer post →</a>
+					}
+				</div>
+			</div>
+		</article>
+	}
+}

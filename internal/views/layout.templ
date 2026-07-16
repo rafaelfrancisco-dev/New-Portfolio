@@ -1,6 +1,8 @@
 package views
 
-templ Layout(title string) {
+// Layout wraps every page: dark shell, terminal-style header with the current
+// "path", nav with the active section highlighted, and the contact footer.
+templ Layout(title string, path string, active string) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full">
 		<head>
@@ -8,10 +10,47 @@ templ Layout(title string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title }</title>
 			<link rel="stylesheet" href="/static/css/app.css"/>
+			<link rel="alternate" type="application/rss+xml" title="Rafael Francisco — Journal" href="/journal/feed.xml"/>
 			<script src="/static/js/htmx.min.js" defer></script>
 		</head>
-		<body class="min-h-full bg-neutral-50 text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100">
-			{ children... }
+		<body class="min-h-full bg-bg text-ink font-sans antialiased flex flex-col">
+			<header class="flex items-baseline justify-between gap-5 flex-wrap px-6 md:px-11 py-[26px] border-b border-line">
+				<a href="/" class="flex items-baseline gap-3 no-underline hover:opacity-85">
+					<span class="font-mono font-semibold text-base">rafael.francisco</span>
+					<span class="font-mono text-[13px] text-faint">{ path }</span>
+				</a>
+				<nav class="flex gap-[22px] flex-wrap font-mono font-medium text-[13.5px]">
+					@navLink("/software", "software", active)
+					@navLink("/photography", "photography", active)
+					@navLink("/journal", "journal", active)
+					@navLink("/about", "about", active)
+					<a href="/journal/feed.xml" class="no-underline text-muted hover:opacity-85">rss</a>
+				</nav>
+			</header>
+			<main class="flex-1">
+				{ children... }
+			</main>
+			<footer class="px-6 md:px-11 py-5 border-t border-line flex justify-between gap-4 flex-wrap font-mono text-[13px] text-faint">
+				<span>© 2026 Rafael Francisco · <a href="mailto:rafael@imaginarymakings.dev" class="no-underline hover:opacity-85">rafael@imaginarymakings.dev</a></span>
+				<div class="flex gap-[18px]">
+					<a href="https://github.com/rafaelfrancisco" class="no-underline hover:opacity-85">github</a>
+					<a href="https://linkedin.com/in/rafaelfrancisco" class="no-underline hover:opacity-85">linkedin</a>
+					<a href="https://instagram.com/rafaelfrancisco" class="no-underline hover:opacity-85">instagram</a>
+					<a href="/journal/feed.xml" class="no-underline hover:opacity-85">rss</a>
+				</div>
+			</footer>
 		</body>
 	</html>
+}
+
+templ navLink(href string, section string, active string) {
+	<a
+		href={ templ.SafeURL(href) }
+		class={ "no-underline hover:opacity-85", templ.KV("text-ink", section == active), templ.KV("text-muted", section != active) }
+	>{ "/" + section }</a>
+}
+
+// SectionLabel is the small tracked mono heading, e.g. "01 — SOFTWARE".
+templ SectionLabel(text string) {
+	<div class="font-mono font-medium text-xs tracking-[.1em] text-faint">{ text }</div>
 }

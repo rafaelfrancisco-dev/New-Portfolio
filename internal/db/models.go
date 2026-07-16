@@ -8,9 +8,14 @@ import (
 	"time"
 )
 
-type Todo struct {
-	ID        int64
-	Title     string
-	Completed bool
-	CreatedAt time.Time
+type Post struct {
+	ID          int64
+	Slug        string
+	Title       string
+	Category    string
+	Teaser      string
+	Lede        string
+	BodyMd      string
+	StoreUrl    string
+	PublishedAt time.Time
 }

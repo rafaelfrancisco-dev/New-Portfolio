@@ -1,0 +1,113 @@
+package views
+
+import (
+	"fmt"
+
+	"go-port/internal/content"
+)
+
+templ PhotographyPage(filter string, photos []content.IndexedPhoto) {
+	@Layout("Rafael Francisco — Photography", "~/photography", "photography") {
+		<div class="px-6 md:px-11 pt-12 pb-[26px] flex flex-col gap-[14px]">
+			@SectionLabel("02 — PHOTOGRAPHY")
+			<div class="flex justify-between items-baseline gap-5 flex-wrap">
+				<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Photography</h1>
+				<div class="flex gap-2 font-mono font-medium text-[12.5px]">
+					@galleryFilter("all", filter)
+					@galleryFilter("landscapes", filter)
+					@galleryFilter("wildlife", filter)
+				</div>
+			</div>
+			<p class="m-0 text-[15px] text-muted max-w-[62ch]">Central Portugal, mostly on foot. Selected work is available as prints — <a href="/about" class="text-ink hover:opacity-85">get in touch</a>.</p>
+		</div>
+		<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11">
+			for _, ph := range photos {
+				<a
+					href="#"
+					hx-get={ photoDetailURL(ph.Index, filter) }
+					hx-target="#photo-modal"
+					hx-swap="innerHTML"
+					class="relative aspect-[3/2] overflow-hidden border border-line no-underline block bg-tile hover:opacity-85"
+				>
+					<span class="absolute left-0 right-0 bottom-0 flex items-end justify-between gap-2 py-2.5 px-3 bg-[linear-gradient(transparent,rgba(12,12,10,.72))]">
+						<span class="font-mono text-[11.5px] text-code-bright">{ ph.Label }</span>
+						<span class="font-mono text-[11px] text-[#8f8a7e]">{ ph.Cat }</span>
+					</span>
+				</a>
+			}
+		</div>
+		<div id="photo-modal"></div>
+		<script>
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') {
+					const m = document.getElementById('photo-modal');
+					if (m) m.innerHTML = '';
+				}
+			});
+		</script>
+	}
+}
+
+templ galleryFilter(key string, current string) {
+	<a
+		href={ templ.SafeURL("/photography?filter=" + key) }
+		class={ "py-[7px] px-3 border rounded no-underline hover:opacity-85",
+			templ.KV("border-ink text-ink", key == current),
+			templ.KV("border-line-strong text-muted", key != current) }
+	>{ key }</a>
+}
+
+// PhotoDetail is the modal fragment swapped into #photo-modal by htmx.
+// prev/next are indexes into content.Photos within the current filter.
+templ PhotoDetail(ph content.IndexedPhoto, prev int, next int, filter string) {
+	<div
+		onclick="document.getElementById('photo-modal').innerHTML=''"
+		class="fixed inset-0 z-[60] bg-[rgba(9,9,8,.93)] flex items-center justify-center p-7"
+	>
+		<div onclick="event.stopPropagation()" class="w-[min(1120px,100%)] max-h-full overflow-auto grid grid-cols-1 md:grid-cols-[1fr_320px] bg-bg border border-line rounded-lg">
+			<div class="relative bg-panel min-h-[360px] flex items-center justify-center">
+				<div class="w-full aspect-[3/2] bg-tile flex items-center justify-center">
+					<span class="font-mono text-xs text-faint">{ "[ " + ph.Label + " ]" }</span>
+				</div>
+			</div>
+			<aside class="pt-6 px-6 pb-[26px] flex flex-col gap-5 border-l border-line">
+				<div class="flex justify-between items-baseline gap-3">
+					<span class="font-mono font-medium text-xs tracking-[.1em] text-faint">PHOTO</span>
+					<button onclick="document.getElementById('photo-modal').innerHTML=''" class="font-mono font-semibold text-xs text-muted hover:opacity-85">✕ esc</button>
+				</div>
+				<div class="flex flex-col gap-2">
+					<h2 class="m-0 text-xl font-semibold leading-[1.3]">{ ph.Label }</h2>
+					<p class="m-0 text-[13px] leading-[1.6] text-faint text-pretty">Image + EXIF load from the Flickr API at runtime once a key is set.</p>
+				</div>
+				<div class="flex flex-col gap-2">
+					<span class="font-mono font-medium text-xs tracking-[.1em] text-faint">EXIF</span>
+					<div class="flex flex-col">
+						@exifRow("Camera")
+						@exifRow("Lens")
+						@exifRow("Exposure")
+						@exifRow("Aperture")
+						@exifRow("ISO")
+						@exifRow("Focal len")
+						@exifRow("Taken")
+						@exifRow("Location")
+					</div>
+				</div>
+				<div class="mt-auto flex justify-between gap-3 font-mono font-semibold text-xs">
+					<a href="#" hx-get={ photoDetailURL(prev, filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="text-ink no-underline hover:opacity-85">← prev</a>
+					<a href="#" hx-get={ photoDetailURL(next, filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="text-ink no-underline hover:opacity-85">next →</a>
+				</div>
+			</aside>
+		</div>
+	</div>
+}
+
+templ exifRow(key string) {
+	<div class="grid grid-cols-[92px_1fr] gap-3 py-2 border-t border-line-soft">
+		<span class="font-mono text-[11.5px] text-faint">{ key }</span>
+		<span class="font-mono text-[12.5px] text-code-bright break-words">—</span>
+	</div>
+}
+
+func photoDetailURL(index int, filter string) string {
+	return fmt.Sprintf("/photography/photos/%d?filter=%s", index, filter)
+}
