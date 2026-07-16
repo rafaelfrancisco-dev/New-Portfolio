@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"database/sql"
 	"encoding/xml"
 	"io"
 	"net/http"
@@ -11,14 +12,21 @@ import (
 
 	"github.com/go-fuego/fuego"
 
+	"go-port/internal/auth"
 	"go-port/internal/db"
 	"go-port/internal/handlers"
 )
 
+type testServer struct {
+	handler http.Handler
+	db      *sql.DB
+	uploads string
+}
+
 // newTestServer spins up the real route table against a throwaway SQLite
 // file; migrations include the seed posts, so the journal has content. DBOS
 // is left nil: no route uses it.
-func newTestServer(t *testing.T) *httptest.Server {
+func newTestServer(t *testing.T) *testServer {
 	t.Helper()
 	sqlDB, err := db.Connect(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
@@ -28,30 +36,46 @@ func newTestServer(t *testing.T) *httptest.Server {
 	if err := db.Migrate(sqlDB); err != nil {
 		t.Fatal(err)
 	}
+	uploadDir := filepath.Join(t.TempDir(), "uploads")
 
 	s := fuego.NewServer()
 	handlers.Register(s, handlers.Resource{
-		Queries: db.New(sqlDB),
-		AppDB:   sqlDB,
-		DBOSDB:  sqlDB,
+		Queries:           db.New(sqlDB),
+		AppDB:             sqlDB,
+		DBOSDB:            sqlDB,
+		AdminUsername:     "admin",
+		AdminPasswordHash: mustPasswordHash(t, "correct horse battery staple"),
+		UploadDir:         uploadDir,
 	})
-	ts := httptest.NewServer(s.Mux)
-	t.Cleanup(ts.Close)
-	return ts
+	return &testServer{handler: s.Mux, db: sqlDB, uploads: uploadDir}
 }
 
-func get(t *testing.T, ts *httptest.Server, path string) (int, string) {
+func mustPasswordHash(t *testing.T, password string) string {
 	t.Helper()
-	resp, err := http.Get(ts.URL + path)
+	hash, err := auth.HashPassword(password)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	return hash
+}
+
+func (ts *testServer) do(t *testing.T, request *http.Request) *httptest.ResponseRecorder {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	ts.handler.ServeHTTP(recorder, request)
+	return recorder
+}
+
+func get(t *testing.T, ts *testServer, path string) (int, string) {
+	t.Helper()
+	request := httptest.NewRequest(http.MethodGet, "http://example.com"+path, nil)
+	response := ts.do(t, request).Result()
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return resp.StatusCode, string(body)
+	return response.StatusCode, string(body)
 }
 
 func TestPagesRender(t *testing.T) {
@@ -156,10 +180,7 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 func TestJournalFeed(t *testing.T) {
 	ts := newTestServer(t)
 
-	resp, err := http.Get(ts.URL + "/journal/feed.xml")
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := ts.do(t, httptest.NewRequest(http.MethodGet, "http://example.com/journal/feed.xml", nil)).Result()
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
@@ -191,10 +212,7 @@ func TestJournalFeed(t *testing.T) {
 func TestHealthz(t *testing.T) {
 	ts := newTestServer(t)
 
-	resp, err := http.Get(ts.URL + "/healthz")
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := ts.do(t, httptest.NewRequest(http.MethodGet, "http://example.com/healthz", nil)).Result()
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)

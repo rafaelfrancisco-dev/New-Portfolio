@@ -7,12 +7,56 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
+const clearLoginAttempts = `-- name: ClearLoginAttempts :exec
+DELETE FROM login_attempts WHERE ip_address = ?
+`
+
+func (q *Queries) ClearLoginAttempts(ctx context.Context, ipAddress string) error {
+	_, err := q.db.ExecContext(ctx, clearLoginAttempts, ipAddress)
+	return err
+}
+
+const countAdminPosts = `-- name: CountAdminPosts :one
+SELECT
+    COUNT(*) AS total,
+    SUM(CASE WHEN status = 'published' THEN 1 ELSE 0 END) AS published,
+    SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) AS drafts
+FROM posts
+`
+
+type CountAdminPostsRow struct {
+	Total     int64
+	Published sql.NullFloat64
+	Drafts    sql.NullFloat64
+}
+
+func (q *Queries) CountAdminPosts(ctx context.Context) (CountAdminPostsRow, error) {
+	row := q.db.QueryRowContext(ctx, countAdminPosts)
+	var i CountAdminPostsRow
+	err := row.Scan(&i.Total, &i.Published, &i.Drafts)
+	return i, err
+}
+
+const countMedia = `-- name: CountMedia :one
+SELECT COUNT(*) FROM media
+`
+
+func (q *Queries) CountMedia(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countMedia)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countPostsByYear = `-- name: CountPostsByYear :many
 SELECT CAST(strftime('%Y', published_at) AS TEXT) AS year, COUNT(*) AS count
-FROM posts GROUP BY year ORDER BY year DESC
+FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL
+GROUP BY year ORDER BY year DESC
 `
 
 type CountPostsByYearRow struct {
@@ -43,11 +87,272 @@ func (q *Queries) CountPostsByYear(ctx context.Context) ([]CountPostsByYearRow, 
 	return items, nil
 }
 
-const getNewerPost = `-- name: GetNewerPost :one
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE published_at > ? ORDER BY published_at ASC LIMIT 1
+const countRecentLoginAttempts = `-- name: CountRecentLoginAttempts :one
+SELECT COUNT(*) FROM login_attempts
+WHERE ip_address = ? AND unixepoch(attempted_at) >= unixepoch(?2)
 `
 
-func (q *Queries) GetNewerPost(ctx context.Context, publishedAt time.Time) (Post, error) {
+type CountRecentLoginAttemptsParams struct {
+	IpAddress string
+	Cutoff    interface{}
+}
+
+func (q *Queries) CountRecentLoginAttempts(ctx context.Context, arg CountRecentLoginAttemptsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countRecentLoginAttempts, arg.IpAddress, arg.Cutoff)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createAdminSession = `-- name: CreateAdminSession :exec
+INSERT INTO admin_sessions (token_hash, csrf_token, expires_at) VALUES (?, ?, ?)
+`
+
+type CreateAdminSessionParams struct {
+	TokenHash string
+	CsrfToken string
+	ExpiresAt time.Time
+}
+
+func (q *Queries) CreateAdminSession(ctx context.Context, arg CreateAdminSessionParams) error {
+	_, err := q.db.ExecContext(ctx, createAdminSession, arg.TokenHash, arg.CsrfToken, arg.ExpiresAt)
+	return err
+}
+
+const createMedia = `-- name: CreateMedia :one
+INSERT INTO media (filename, original_filename, mime_type, size_bytes)
+VALUES (?, ?, ?, ?)
+RETURNING id, filename, original_filename, mime_type, size_bytes, created_at
+`
+
+type CreateMediaParams struct {
+	Filename         string
+	OriginalFilename string
+	MimeType         string
+	SizeBytes        int64
+}
+
+func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (Medium, error) {
+	row := q.db.QueryRowContext(ctx, createMedia,
+		arg.Filename,
+		arg.OriginalFilename,
+		arg.MimeType,
+		arg.SizeBytes,
+	)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.Filename,
+		&i.OriginalFilename,
+		&i.MimeType,
+		&i.SizeBytes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createPost = `-- name: CreatePost :one
+INSERT INTO posts (
+    slug, title, category, teaser, lede, body_md, store_url,
+    status, published_at, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+RETURNING id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at
+`
+
+type CreatePostParams struct {
+	Slug        string
+	Title       string
+	Category    string
+	Teaser      string
+	Lede        string
+	BodyMd      string
+	StoreUrl    string
+	Status      string
+	PublishedAt sql.NullTime
+}
+
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, createPost,
+		arg.Slug,
+		arg.Title,
+		arg.Category,
+		arg.Teaser,
+		arg.Lede,
+		arg.BodyMd,
+		arg.StoreUrl,
+		arg.Status,
+		arg.PublishedAt,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.Status,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createSlugRedirect = `-- name: CreateSlugRedirect :exec
+INSERT INTO slug_redirects (old_slug, post_id)
+VALUES (?, ?)
+ON CONFLICT(old_slug) DO UPDATE SET post_id = excluded.post_id
+`
+
+type CreateSlugRedirectParams struct {
+	OldSlug string
+	PostID  int64
+}
+
+func (q *Queries) CreateSlugRedirect(ctx context.Context, arg CreateSlugRedirectParams) error {
+	_, err := q.db.ExecContext(ctx, createSlugRedirect, arg.OldSlug, arg.PostID)
+	return err
+}
+
+const deleteAdminSession = `-- name: DeleteAdminSession :exec
+DELETE FROM admin_sessions WHERE token_hash = ?
+`
+
+func (q *Queries) DeleteAdminSession(ctx context.Context, tokenHash string) error {
+	_, err := q.db.ExecContext(ctx, deleteAdminSession, tokenHash)
+	return err
+}
+
+const deleteMedia = `-- name: DeleteMedia :exec
+DELETE FROM media WHERE id = ?
+`
+
+func (q *Queries) DeleteMedia(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteMedia, id)
+	return err
+}
+
+const deleteOldLoginAttempts = `-- name: DeleteOldLoginAttempts :exec
+DELETE FROM login_attempts WHERE unixepoch(attempted_at) < unixepoch(?1)
+`
+
+func (q *Queries) DeleteOldLoginAttempts(ctx context.Context, cutoff interface{}) error {
+	_, err := q.db.ExecContext(ctx, deleteOldLoginAttempts, cutoff)
+	return err
+}
+
+const deletePost = `-- name: DeletePost :execrows
+DELETE FROM posts WHERE id = ? AND julianday(updated_at) = julianday(?2)
+`
+
+type DeletePostParams struct {
+	ID        int64
+	UpdatedAt interface{}
+}
+
+func (q *Queries) DeletePost(ctx context.Context, arg DeletePostParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deletePost, arg.ID, arg.UpdatedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteSlugRedirectForCurrentSlug = `-- name: DeleteSlugRedirectForCurrentSlug :exec
+DELETE FROM slug_redirects WHERE old_slug = ?
+`
+
+func (q *Queries) DeleteSlugRedirectForCurrentSlug(ctx context.Context, oldSlug string) error {
+	_, err := q.db.ExecContext(ctx, deleteSlugRedirectForCurrentSlug, oldSlug)
+	return err
+}
+
+const getAdminPost = `-- name: GetAdminPost :one
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts WHERE id = ?
+`
+
+func (q *Queries) GetAdminPost(ctx context.Context, id int64) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getAdminPost, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.Status,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getAdminSession = `-- name: GetAdminSession :one
+SELECT token_hash, csrf_token, created_at, expires_at FROM admin_sessions WHERE token_hash = ?
+`
+
+func (q *Queries) GetAdminSession(ctx context.Context, tokenHash string) (AdminSession, error) {
+	row := q.db.QueryRowContext(ctx, getAdminSession, tokenHash)
+	var i AdminSession
+	err := row.Scan(
+		&i.TokenHash,
+		&i.CsrfToken,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const getMedia = `-- name: GetMedia :one
+SELECT id, filename, original_filename, mime_type, size_bytes, created_at FROM media WHERE id = ?
+`
+
+func (q *Queries) GetMedia(ctx context.Context, id int64) (Medium, error) {
+	row := q.db.QueryRowContext(ctx, getMedia, id)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.Filename,
+		&i.OriginalFilename,
+		&i.MimeType,
+		&i.SizeBytes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getMediaByFilename = `-- name: GetMediaByFilename :one
+SELECT id, filename, original_filename, mime_type, size_bytes, created_at FROM media WHERE filename = ?
+`
+
+func (q *Queries) GetMediaByFilename(ctx context.Context, filename string) (Medium, error) {
+	row := q.db.QueryRowContext(ctx, getMediaByFilename, filename)
+	var i Medium
+	err := row.Scan(
+		&i.ID,
+		&i.Filename,
+		&i.OriginalFilename,
+		&i.MimeType,
+		&i.SizeBytes,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getNewerPost = `-- name: GetNewerPost :one
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL AND published_at > ?
+ORDER BY published_at ASC LIMIT 1
+`
+
+func (q *Queries) GetNewerPost(ctx context.Context, publishedAt sql.NullTime) (Post, error) {
 	row := q.db.QueryRowContext(ctx, getNewerPost, publishedAt)
 	var i Post
 	err := row.Scan(
@@ -59,16 +364,21 @@ func (q *Queries) GetNewerPost(ctx context.Context, publishedAt time.Time) (Post
 		&i.Lede,
 		&i.BodyMd,
 		&i.StoreUrl,
+		&i.Status,
 		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getOlderPost = `-- name: GetOlderPost :one
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE published_at < ? ORDER BY published_at DESC LIMIT 1
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL AND published_at < ?
+ORDER BY published_at DESC LIMIT 1
 `
 
-func (q *Queries) GetOlderPost(ctx context.Context, publishedAt time.Time) (Post, error) {
+func (q *Queries) GetOlderPost(ctx context.Context, publishedAt sql.NullTime) (Post, error) {
 	row := q.db.QueryRowContext(ctx, getOlderPost, publishedAt)
 	var i Post
 	err := row.Scan(
@@ -80,13 +390,17 @@ func (q *Queries) GetOlderPost(ctx context.Context, publishedAt time.Time) (Post
 		&i.Lede,
 		&i.BodyMd,
 		&i.StoreUrl,
+		&i.Status,
 		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getPostBySlug = `-- name: GetPostBySlug :one
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE slug = ?
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL
 `
 
 func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (Post, error) {
@@ -101,13 +415,171 @@ func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (Post, error) 
 		&i.Lede,
 		&i.BodyMd,
 		&i.StoreUrl,
+		&i.Status,
 		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const getSiteSettings = `-- name: GetSiteSettings :one
+SELECT id, display_name, site_handle, site_title, site_description, journal_description, contact_email, github_url, linkedin_url, instagram_url, updated_at FROM site_settings WHERE id = 1
+`
+
+func (q *Queries) GetSiteSettings(ctx context.Context) (SiteSetting, error) {
+	row := q.db.QueryRowContext(ctx, getSiteSettings)
+	var i SiteSetting
+	err := row.Scan(
+		&i.ID,
+		&i.DisplayName,
+		&i.SiteHandle,
+		&i.SiteTitle,
+		&i.SiteDescription,
+		&i.JournalDescription,
+		&i.ContactEmail,
+		&i.GithubUrl,
+		&i.LinkedinUrl,
+		&i.InstagramUrl,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getSlugRedirect = `-- name: GetSlugRedirect :one
+SELECT p.id, p.slug, p.title, p.category, p.teaser, p.lede, p.body_md, p.store_url, p.status, p.published_at, p.created_at, p.updated_at FROM slug_redirects r
+JOIN posts p ON p.id = r.post_id
+WHERE r.old_slug = ? AND p.status = 'published' AND p.published_at IS NOT NULL
+`
+
+func (q *Queries) GetSlugRedirect(ctx context.Context, oldSlug string) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getSlugRedirect, oldSlug)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.Status,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listAdminPosts = `-- name: ListAdminPosts :many
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE (?1 = '' OR status = ?1)
+  AND (?2 = '' OR category = ?2)
+  AND (
+    ?3 = ''
+    OR title LIKE '%' || ?3 || '%'
+    OR teaser LIKE '%' || ?3 || '%'
+    OR body_md LIKE '%' || ?3 || '%'
+  )
+ORDER BY updated_at DESC, id DESC
+`
+
+type ListAdminPostsParams struct {
+	StatusFilter   interface{}
+	CategoryFilter interface{}
+	SearchText     interface{}
+}
+
+func (q *Queries) ListAdminPosts(ctx context.Context, arg ListAdminPostsParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listAdminPosts, arg.StatusFilter, arg.CategoryFilter, arg.SearchText)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Category,
+			&i.Teaser,
+			&i.Lede,
+			&i.BodyMd,
+			&i.StoreUrl,
+			&i.Status,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMedia = `-- name: ListMedia :many
+SELECT
+    m.id, m.filename, m.original_filename, m.mime_type, m.size_bytes, m.created_at,
+    EXISTS(SELECT 1 FROM posts p WHERE instr(p.body_md, '/media/' || m.filename) > 0) AS in_use
+FROM media m
+ORDER BY m.created_at DESC, m.id DESC
+`
+
+type ListMediaRow struct {
+	ID               int64
+	Filename         string
+	OriginalFilename string
+	MimeType         string
+	SizeBytes        int64
+	CreatedAt        time.Time
+	InUse            bool
+}
+
+func (q *Queries) ListMedia(ctx context.Context) ([]ListMediaRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMedia)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListMediaRow
+	for rows.Next() {
+		var i ListMediaRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Filename,
+			&i.OriginalFilename,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.CreatedAt,
+			&i.InUse,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPosts = `-- name: ListPosts :many
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts ORDER BY published_at DESC
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL
+ORDER BY published_at DESC
 `
 
 func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
@@ -128,7 +600,10 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 			&i.Lede,
 			&i.BodyMd,
 			&i.StoreUrl,
+			&i.Status,
 			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -144,7 +619,9 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 }
 
 const listPostsByCategory = `-- name: ListPostsByCategory :many
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts WHERE category = ? ORDER BY published_at DESC
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL AND category = ?
+ORDER BY published_at DESC
 `
 
 func (q *Queries) ListPostsByCategory(ctx context.Context, category string) ([]Post, error) {
@@ -165,7 +642,10 @@ func (q *Queries) ListPostsByCategory(ctx context.Context, category string) ([]P
 			&i.Lede,
 			&i.BodyMd,
 			&i.StoreUrl,
+			&i.Status,
 			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -181,7 +661,9 @@ func (q *Queries) ListPostsByCategory(ctx context.Context, category string) ([]P
 }
 
 const listRecentPosts = `-- name: ListRecentPosts :many
-SELECT id, slug, title, category, teaser, lede, body_md, store_url, published_at FROM posts ORDER BY published_at DESC LIMIT ?
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts
+WHERE status = 'published' AND published_at IS NOT NULL
+ORDER BY published_at DESC LIMIT ?
 `
 
 func (q *Queries) ListRecentPosts(ctx context.Context, limit int64) ([]Post, error) {
@@ -202,7 +684,10 @@ func (q *Queries) ListRecentPosts(ctx context.Context, limit int64) ([]Post, err
 			&i.Lede,
 			&i.BodyMd,
 			&i.StoreUrl,
+			&i.Status,
 			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -215,4 +700,172 @@ func (q *Queries) ListRecentPosts(ctx context.Context, limit int64) ([]Post, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const mediaIsReferenced = `-- name: MediaIsReferenced :one
+SELECT EXISTS(
+    SELECT 1 FROM posts WHERE instr(body_md, '/media/' || ?) > 0
+) AS in_use
+`
+
+func (q *Queries) MediaIsReferenced(ctx context.Context, dollar_1 sql.NullString) (bool, error) {
+	row := q.db.QueryRowContext(ctx, mediaIsReferenced, dollar_1)
+	var in_use bool
+	err := row.Scan(&in_use)
+	return in_use, err
+}
+
+const recordLoginAttempt = `-- name: RecordLoginAttempt :exec
+INSERT INTO login_attempts (ip_address) VALUES (?)
+`
+
+func (q *Queries) RecordLoginAttempt(ctx context.Context, ipAddress string) error {
+	_, err := q.db.ExecContext(ctx, recordLoginAttempt, ipAddress)
+	return err
+}
+
+const slugInUse = `-- name: SlugInUse :one
+SELECT EXISTS(
+    SELECT 1 FROM posts WHERE slug = ? AND id != ?
+    UNION ALL
+    SELECT 1 FROM slug_redirects WHERE old_slug = ? AND post_id != ?
+) AS in_use
+`
+
+type SlugInUseParams struct {
+	Slug    string
+	ID      int64
+	OldSlug string
+	PostID  int64
+}
+
+func (q *Queries) SlugInUse(ctx context.Context, arg SlugInUseParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, slugInUse,
+		arg.Slug,
+		arg.ID,
+		arg.OldSlug,
+		arg.PostID,
+	)
+	var in_use bool
+	err := row.Scan(&in_use)
+	return in_use, err
+}
+
+const updatePost = `-- name: UpdatePost :one
+UPDATE posts SET
+    slug = ?,
+    title = ?,
+    category = ?,
+    teaser = ?,
+    lede = ?,
+    body_md = ?,
+    store_url = ?,
+    status = ?,
+    published_at = ?,
+    updated_at = strftime('%Y-%m-%d %H:%M:%f', 'now')
+WHERE id = ? AND julianday(updated_at) = julianday(?11)
+RETURNING id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at
+`
+
+type UpdatePostParams struct {
+	Slug        string
+	Title       string
+	Category    string
+	Teaser      string
+	Lede        string
+	BodyMd      string
+	StoreUrl    string
+	Status      string
+	PublishedAt sql.NullTime
+	ID          int64
+	UpdatedAt   interface{}
+}
+
+func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, updatePost,
+		arg.Slug,
+		arg.Title,
+		arg.Category,
+		arg.Teaser,
+		arg.Lede,
+		arg.BodyMd,
+		arg.StoreUrl,
+		arg.Status,
+		arg.PublishedAt,
+		arg.ID,
+		arg.UpdatedAt,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Category,
+		&i.Teaser,
+		&i.Lede,
+		&i.BodyMd,
+		&i.StoreUrl,
+		&i.Status,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateSiteSettings = `-- name: UpdateSiteSettings :one
+UPDATE site_settings SET
+    display_name = ?,
+    site_handle = ?,
+    site_title = ?,
+    site_description = ?,
+    journal_description = ?,
+    contact_email = ?,
+    github_url = ?,
+    linkedin_url = ?,
+    instagram_url = ?,
+    updated_at = strftime('%Y-%m-%d %H:%M:%f', 'now')
+WHERE id = 1
+RETURNING id, display_name, site_handle, site_title, site_description, journal_description, contact_email, github_url, linkedin_url, instagram_url, updated_at
+`
+
+type UpdateSiteSettingsParams struct {
+	DisplayName        string
+	SiteHandle         string
+	SiteTitle          string
+	SiteDescription    string
+	JournalDescription string
+	ContactEmail       string
+	GithubUrl          string
+	LinkedinUrl        string
+	InstagramUrl       string
+}
+
+func (q *Queries) UpdateSiteSettings(ctx context.Context, arg UpdateSiteSettingsParams) (SiteSetting, error) {
+	row := q.db.QueryRowContext(ctx, updateSiteSettings,
+		arg.DisplayName,
+		arg.SiteHandle,
+		arg.SiteTitle,
+		arg.SiteDescription,
+		arg.JournalDescription,
+		arg.ContactEmail,
+		arg.GithubUrl,
+		arg.LinkedinUrl,
+		arg.InstagramUrl,
+	)
+	var i SiteSetting
+	err := row.Scan(
+		&i.ID,
+		&i.DisplayName,
+		&i.SiteHandle,
+		&i.SiteTitle,
+		&i.SiteDescription,
+		&i.JournalDescription,
+		&i.ContactEmail,
+		&i.GithubUrl,
+		&i.LinkedinUrl,
+		&i.InstagramUrl,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

@@ -12,9 +12,10 @@ import (
 	"fmt"
 
 	"go-port/internal/content"
+	"go-port/internal/db"
 )
 
-func PhotographyPage(filter string, photos []content.IndexedPhoto) templ.Component {
+func PhotographyPage(filter string, photos []content.IndexedPhoto, settings db.SiteSetting) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -83,7 +84,7 @@ func PhotographyPage(filter string, photos []content.IndexedPhoto) templ.Compone
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(ph.Index, filter))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 27, Col: 46}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 28, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 				if templ_7745c5c3_Err != nil {
@@ -96,7 +97,7 @@ func PhotographyPage(filter string, photos []content.IndexedPhoto) templ.Compone
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(ph.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 33, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 34, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -109,7 +110,7 @@ func PhotographyPage(filter string, photos []content.IndexedPhoto) templ.Compone
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(ph.Cat)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 34, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 35, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -126,7 +127,7 @@ func PhotographyPage(filter string, photos []content.IndexedPhoto) templ.Compone
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("Rafael Francisco — Photography", "~/photography", "photography").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — Photography", "~/photography", "photography").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -169,7 +170,7 @@ func galleryFilter(key string, current string) templ.Component {
 		var templ_7745c5c3_Var8 templ.SafeURL
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/photography?filter=" + key))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 53, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 54, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -195,7 +196,7 @@ func galleryFilter(key string, current string) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 57, Col: 7}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 58, Col: 7}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -239,7 +240,7 @@ func PhotoDetail(ph content.IndexedPhoto, prev int, next int, filter string) tem
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("[ " + ph.Label + " ]")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 70, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 71, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -252,7 +253,7 @@ func PhotoDetail(ph content.IndexedPhoto, prev int, next int, filter string) tem
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(ph.Label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 79, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 80, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -301,7 +302,7 @@ func PhotoDetail(ph content.IndexedPhoto, prev int, next int, filter string) tem
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(prev, filter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 96, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 97, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 		if templ_7745c5c3_Err != nil {
@@ -314,7 +315,7 @@ func PhotoDetail(ph content.IndexedPhoto, prev int, next int, filter string) tem
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(next, filter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 97, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 98, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 		if templ_7745c5c3_Err != nil {
@@ -356,7 +357,7 @@ func exifRow(key string) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 106, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 107, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {

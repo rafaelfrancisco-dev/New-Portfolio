@@ -1,9 +1,12 @@
 package views
 
-import "go-port/internal/content"
+import (
+	"go-port/internal/content"
+	"go-port/internal/db"
+)
 
-templ SoftwarePage(projects []content.Project) {
-	@Layout("Rafael Francisco — Software", "~/software", "software") {
+templ SoftwarePage(projects []content.Project, settings db.SiteSetting) {
+	@Layout(settings, settings.DisplayName + " — Software", "~/software", "software") {
 		<div class="px-6 md:px-11 pt-12 pb-7 flex flex-col gap-[14px] border-b border-line">
 			@SectionLabel("01 — SOFTWARE")
 			<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Projects</h1>

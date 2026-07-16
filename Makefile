@@ -22,7 +22,7 @@ else
 	TAILWIND_OS := linux
 endif
 
-.PHONY: tools generate css build run dev test migration migrate-status clean
+.PHONY: tools generate css build run dev test adminhash migration migrate-status clean
 
 ## tools: install code generators into ./bin and vendor htmx
 tools:
@@ -53,6 +53,10 @@ run: generate css
 
 test:
 	go test ./...
+
+## adminhash: interactively generate an ADMIN_PASSWORD_HASH value
+adminhash:
+	go run ./cmd/adminhash
 
 ## dev: live reload (templ + go) via air
 dev:

@@ -29,6 +29,15 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	adminPasswordHash := os.Getenv("ADMIN_PASSWORD_HASH")
+	if adminPasswordHash == "" {
+		return errors.New("ADMIN_PASSWORD_HASH is required; generate one with go run ./cmd/adminhash")
+	}
+	uploadDir := envOr("UPLOAD_DIR", "uploads")
+	if err := os.MkdirAll(uploadDir, 0o750); err != nil {
+		return errors.Wrapf(err, "create upload directory %q", uploadDir)
+	}
+
 	// Application database: migrate with goose, query with sqlc.
 	appDB, err := db.Connect(envOr("APP_DB", "app.db"))
 	if err != nil {
@@ -65,10 +74,13 @@ func run() error {
 		fuego.WithAddr(envOr("ADDR", "localhost:8080")),
 	)
 	handlers.Register(s, handlers.Resource{
-		Queries: queries,
-		DBOS:    dbosCtx,
-		AppDB:   appDB,
-		DBOSDB:  dbosDB,
+		Queries:           queries,
+		DBOS:              dbosCtx,
+		AppDB:             appDB,
+		DBOSDB:            dbosDB,
+		AdminUsername:     envOr("ADMIN_USERNAME", "admin"),
+		AdminPasswordHash: adminPasswordHash,
+		UploadDir:         uploadDir,
 	})
 
 	// Serve until the context is cancelled by SIGINT/SIGTERM, then drain

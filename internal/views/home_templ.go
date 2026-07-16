@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "go-port/internal/db"
 
-func HomePage(posts []db.Post) templ.Component {
+func HomePage(posts []db.Post, settings db.SiteSetting) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -110,9 +110,9 @@ func HomePage(posts []db.Post) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
-				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(p.PublishedAt.Format("2006-01-02"))
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(formatPostDate(p))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 40, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 40, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -142,7 +142,7 @@ func HomePage(posts []db.Post) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("Rafael Francisco — iOS apps & photography", "~/coimbra-pt", "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.SiteTitle, "~/coimbra-pt", "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

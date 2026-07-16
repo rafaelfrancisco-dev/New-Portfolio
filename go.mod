@@ -7,11 +7,16 @@ require (
 	github.com/cockroachdb/errors v1.14.0
 	github.com/dbos-inc/dbos-transact-golang v0.19.0
 	github.com/go-fuego/fuego v0.19.0
+	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pressly/goose/v3 v3.27.2
+	github.com/yuin/goldmark v1.8.4
+	golang.org/x/crypto v0.52.0
+	golang.org/x/term v0.43.0
 	modernc.org/sqlite v1.53.0
 )
 
 require (
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -26,6 +31,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6 // indirect
@@ -51,9 +57,8 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
-	github.com/yuin/goldmark v1.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect

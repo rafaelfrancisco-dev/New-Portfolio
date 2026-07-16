@@ -1,52 +1,68 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/xml"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/dbos-inc/dbos-transact-golang/dbos"
 	"github.com/go-fuego/fuego"
-	"github.com/yuin/goldmark"
-	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
 
 	"go-port/internal/content"
 	"go-port/internal/db"
+	portmarkdown "go-port/internal/markdown"
 	"go-port/internal/views"
 )
 
 // Resource groups the dependencies of all HTTP handlers.
 type Resource struct {
-	Queries *db.Queries
-	DBOS    dbos.DBOSContext
-	AppDB   *sql.DB
-	DBOSDB  *sql.DB
+	Queries           *db.Queries
+	DBOS              dbos.DBOSContext
+	AppDB             *sql.DB
+	DBOSDB            *sql.DB
+	AdminUsername     string
+	AdminPasswordHash string
+	UploadDir         string
+	Markdown          *portmarkdown.Renderer
 }
 
-// markdown renders post bodies from the posts table. The content is authored
-// by us, so WithUnsafe is fine — it keeps the raw <figure> blocks embedded in
-// the Markdown.
-var markdown = goldmark.New(goldmark.WithRendererOptions(goldmarkhtml.WithUnsafe()))
+func (rs Resource) siteSettings(ctx context.Context) (db.SiteSetting, error) {
+	settings, err := rs.Queries.GetSiteSettings(ctx)
+	if err != nil {
+		return db.SiteSetting{}, errors.Wrap(err, "get site settings")
+	}
+	return settings, nil
+}
 
 func (rs Resource) homePage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	posts, err := rs.Queries.ListRecentPosts(c.Context(), 3)
 	if err != nil {
 		return nil, errors.Wrap(err, "list recent posts")
 	}
-	return views.HomePage(posts), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.HomePage(posts, settings), nil
 }
 
 func (rs Resource) softwarePage(c fuego.ContextNoBody) (fuego.Templ, error) {
-	return views.SoftwarePage(content.Projects), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.SoftwarePage(content.Projects, settings), nil
 }
 
 func (rs Resource) aboutPage(c fuego.ContextNoBody) (fuego.Templ, error) {
-	return views.AboutPage(), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.AboutPage(settings), nil
 }
 
 // galleryFilter normalizes the ?filter= query param to a known value.
@@ -60,7 +76,11 @@ func galleryFilter(c fuego.ContextNoBody) string {
 
 func (rs Resource) photographyPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	filter := galleryFilter(c)
-	return views.PhotographyPage(filter, content.FilterPhotos(filter)), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.PhotographyPage(filter, content.FilterPhotos(filter), settings), nil
 }
 
 // photoDetail returns the modal fragment for one gallery photo; prev/next
@@ -105,20 +125,32 @@ func (rs Resource) journalPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "count posts by year")
 	}
-	return views.JournalPage(posts, filter, years), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.JournalPage(posts, filter, years, settings), nil
 }
 
 func (rs Resource) articlePage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	post, err := rs.Queries.GetPostBySlug(c.Context(), c.PathParam("slug"))
 	if errors.Is(err, sql.ErrNoRows) {
+		redirect, redirectErr := rs.Queries.GetSlugRedirect(c.Context(), c.PathParam("slug"))
+		if redirectErr == nil {
+			_, _ = c.Redirect(http.StatusMovedPermanently, "/journal/"+redirect.Slug)
+			return nil, nil
+		}
+		if !errors.Is(redirectErr, sql.ErrNoRows) {
+			return nil, errors.Wrap(redirectErr, "get slug redirect")
+		}
 		return nil, fuego.NotFoundError{Detail: "post not found"}
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "get post")
 	}
 
-	var body bytes.Buffer
-	if err := markdown.Convert([]byte(post.BodyMd), &body); err != nil {
+	body, err := rs.Markdown.Render(post.BodyMd)
+	if err != nil {
 		return nil, errors.Wrap(err, "render post body")
 	}
 
@@ -132,10 +164,14 @@ func (rs Resource) articlePage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	}
 
 	readMinutes := max(1, len(strings.Fields(post.BodyMd))/200)
-	return views.ArticlePage(post, body.String(), readMinutes, older, newer), nil
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.ArticlePage(post, body, readMinutes, older, newer, settings), nil
 }
 
-func (rs Resource) adjacentPost(c fuego.ContextNoBody, post db.Post, query func(context.Context, time.Time) (db.Post, error)) (*db.Post, error) {
+func (rs Resource) adjacentPost(c fuego.ContextNoBody, post db.Post, query func(context.Context, sql.NullTime) (db.Post, error)) (*db.Post, error) {
 	adj, err := query(c.Context(), post.PublishedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -160,12 +196,17 @@ func (rs Resource) journalFeed(w http.ResponseWriter, r *http.Request) {
 	}
 	base := scheme + "://" + r.Host
 
+	settings, err := rs.siteSettings(r.Context())
+	if err != nil {
+		http.Error(w, "failed to load settings", http.StatusInternalServerError)
+		return
+	}
 	feed := rssFeed{
 		Version: "2.0",
 		Channel: rssChannel{
-			Title:       "Rafael Francisco — Journal",
+			Title:       settings.DisplayName + " — Journal",
 			Link:        base + "/journal",
-			Description: "Notes from the field & the desk — iOS development and photography in Portugal.",
+			Description: settings.JournalDescription,
 		},
 	}
 	for _, p := range posts {
@@ -173,7 +214,7 @@ func (rs Resource) journalFeed(w http.ResponseWriter, r *http.Request) {
 			Title:       p.Title,
 			Link:        base + "/journal/" + p.Slug,
 			GUID:        base + "/journal/" + p.Slug,
-			PubDate:     p.PublishedAt.UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT"),
+			PubDate:     p.PublishedAt.Time.UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT"),
 			Description: p.Teaser,
 		})
 	}

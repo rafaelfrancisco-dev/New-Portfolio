@@ -12,3 +12,6 @@
 *.db
 *.db-shm
 *.db-wal
+
+# Persistent admin media (metadata is in SQLite).
+/uploads/

@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"go-port/internal/content"
+	"go-port/internal/db"
 )
 
-templ PhotographyPage(filter string, photos []content.IndexedPhoto) {
-	@Layout("Rafael Francisco — Photography", "~/photography", "photography") {
+templ PhotographyPage(filter string, photos []content.IndexedPhoto, settings db.SiteSetting) {
+	@Layout(settings, settings.DisplayName + " — Photography", "~/photography", "photography") {
 		<div class="px-6 md:px-11 pt-12 pb-[26px] flex flex-col gap-[14px]">
 			@SectionLabel("02 — PHOTOGRAPHY")
 			<div class="flex justify-between items-baseline gap-5 flex-wrap">

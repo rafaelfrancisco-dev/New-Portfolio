@@ -1,0 +1,316 @@
+package views
+
+import (
+	"fmt"
+	"strconv"
+
+	"go-port/internal/db"
+)
+
+templ AdminLoginPage(csrfToken string, message string) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>Admin login</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+		</head>
+		<body class="min-h-full bg-bg text-ink font-sans antialiased flex items-center justify-center p-6">
+			<main class="w-full max-w-md border border-line bg-panel rounded-md p-6 flex flex-col gap-5">
+				<div>
+					<div class="font-mono text-xs tracking-[.1em] text-faint">PORTFOLIO ADMIN</div>
+					<h1 class="mt-2 mb-0 text-3xl font-semibold">Sign in</h1>
+				</div>
+				if message != "" {
+					<div class="border border-warm text-warm rounded px-3 py-2 text-sm">{ message }</div>
+				}
+				<form method="post" action="/admin/login" class="flex flex-col gap-4">
+					<input type="hidden" name="csrf_token" value={ csrfToken }/>
+					@adminField("Username", "username", "text", "", true)
+					@adminField("Password", "password", "password", "", true)
+					<button type="submit" class="bg-ink text-bg font-mono font-semibold rounded px-4 py-2.5 cursor-pointer">Sign in</button>
+				</form>
+			</main>
+		</body>
+	</html>
+}
+
+templ AdminLayout(title string, active string, csrfToken string) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } — Admin</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="/static/js/htmx.min.js" defer></script>
+		</head>
+		<body class="min-h-full bg-bg text-ink font-sans antialiased">
+			<header class="px-5 md:px-8 py-4 border-b border-line flex items-center justify-between gap-4 flex-wrap">
+				<a href="/admin" class="font-mono font-semibold no-underline text-ink">portfolio.admin</a>
+				<nav class="flex gap-4 font-mono text-sm">
+					@adminNav("/admin", "dashboard", active)
+					@adminNav("/admin/posts", "posts", active)
+					@adminNav("/admin/media", "media", active)
+					@adminNav("/admin/settings", "settings", active)
+					<a href="/" class="text-muted no-underline">view site ↗</a>
+				</nav>
+				<form method="post" action="/admin/logout">
+					<input type="hidden" name="csrf_token" value={ csrfToken }/>
+					<button class="border border-line-strong rounded px-3 py-1.5 bg-transparent text-muted font-mono text-xs cursor-pointer">logout</button>
+				</form>
+			</header>
+			<main class="max-w-[1440px] mx-auto px-5 md:px-8 py-8">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ adminNav(href string, label string, active string) {
+	<a href={ templ.SafeURL(href) } class={ "no-underline", templ.KV("text-ink", label == active), templ.KV("text-muted", label != active) }>{ label }</a>
+}
+
+templ AdminDashboardPage(counts db.CountAdminPostsRow, mediaCount int, csrfToken string) {
+	@AdminLayout("Dashboard", "dashboard", csrfToken) {
+		<div class="flex items-baseline justify-between gap-4 mb-7">
+			<div>
+				<div class="font-mono text-xs tracking-[.1em] text-faint">OVERVIEW</div>
+				<h1 class="mt-2 mb-0 text-4xl font-semibold">Dashboard</h1>
+			</div>
+			<a href="/admin/posts/new" class="bg-ink text-bg rounded px-4 py-2.5 font-mono font-semibold text-sm no-underline">new post</a>
+		</div>
+		<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+			@adminMetric("posts", strconv.FormatInt(counts.Total, 10))
+			@adminMetric("published", fmt.Sprintf("%.0f", counts.Published.Float64))
+			@adminMetric("drafts", fmt.Sprintf("%.0f", counts.Drafts.Float64))
+			@adminMetric("media", strconv.Itoa(mediaCount))
+		</div>
+	}
+}
+
+templ adminMetric(label string, value string) {
+	<div class="border border-line rounded p-5 bg-panel">
+		<div class="font-mono text-xs text-faint">{ label }</div>
+		<div class="mt-2 text-4xl font-semibold">{ value }</div>
+	</div>
+}
+
+templ AdminPostsPage(posts []db.Post, status string, category string, search string, csrfToken string) {
+	@AdminLayout("Posts", "posts", csrfToken) {
+		<div class="flex items-baseline justify-between gap-4 mb-6">
+			<h1 class="m-0 text-4xl font-semibold">Posts</h1>
+			<a href="/admin/posts/new" class="bg-ink text-bg rounded px-4 py-2.5 font-mono font-semibold text-sm no-underline">new post</a>
+		</div>
+		<form method="get" action="/admin/posts" class="grid grid-cols-1 md:grid-cols-[180px_180px_1fr_auto] gap-3 mb-6">
+			<select name="status" class="admin-input">
+				<option value="" selected?={ status == "" }>all statuses</option>
+				<option value="draft" selected?={ status == "draft" }>draft</option>
+				<option value="published" selected?={ status == "published" }>published</option>
+			</select>
+			<select name="category" class="admin-input">
+				<option value="" selected?={ category == "" }>all categories</option>
+				<option value="software" selected?={ category == "software" }>software</option>
+				<option value="photography" selected?={ category == "photography" }>photography</option>
+			</select>
+			<input class="admin-input" type="search" name="q" value={ search } placeholder="Search title or content"/>
+			<button class="border border-line-strong rounded px-4 bg-panel font-mono text-sm cursor-pointer">filter</button>
+		</form>
+		<div class="border border-line rounded overflow-hidden">
+			for _, post := range posts {
+				<a href={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/edit", post.ID)) } class="grid grid-cols-1 md:grid-cols-[1fr_130px_130px_140px] gap-2 md:gap-4 p-4 border-b border-line last:border-b-0 no-underline text-inherit hover:bg-panel">
+					<span class="font-semibold">{ post.Title }</span>
+					<span class="font-mono text-xs text-muted">{ post.Category }</span>
+					<span class={ "font-mono text-xs", templ.KV("text-warm", post.Status == "draft"), templ.KV("text-muted", post.Status == "published") }>{ post.Status }</span>
+					<span class="font-mono text-xs text-faint">{ post.UpdatedAt.Format("2006-01-02 15:04") }</span>
+				</a>
+			}
+			if len(posts) == 0 {
+				<p class="m-0 p-6 text-muted">No posts match these filters.</p>
+			}
+		</div>
+	}
+}
+
+templ AdminPostEditorPage(form AdminPostForm, previewHTML string, media []db.ListMediaRow, csrfToken string) {
+	@AdminLayout(adminPostHeading(form), "posts", csrfToken) {
+		<div class="flex items-baseline justify-between gap-4 mb-6">
+			<div>
+				<a href="/admin/posts" class="font-mono text-xs text-muted no-underline">← posts</a>
+				<h1 class="mt-2 mb-0 text-4xl font-semibold">{ adminPostHeading(form) }</h1>
+			</div>
+			if form.Status != "" {
+				<span class="font-mono text-sm text-muted">{ form.Status }</span>
+			}
+		</div>
+		if form.Error != "" {
+			<div class="mb-5 border border-warm text-warm rounded px-4 py-3">{ form.Error }</div>
+		}
+		<form id="post-editor" method="post" action={ templ.SafeURL(adminPostAction(form)) } class="flex flex-col gap-5">
+			<input type="hidden" name="csrf_token" value={ csrfToken }/>
+			<input type="hidden" name="updated_at" value={ form.UpdatedAt }/>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				@adminField("Title", "title", "text", form.Title, true)
+				@adminField("Slug (blank to generate)", "slug", "text", form.Slug, false)
+				@adminSelect("Category", "category", form.Category)
+				@adminField("Publication date", "published_date", "date", form.PublishedDate, false)
+			</div>
+			@adminTextArea("Teaser", "teaser", form.Teaser, 3)
+			@adminTextArea("Lede", "lede", form.Lede, 3)
+			@adminField("Optional store URL", "store_url", "url", form.StoreURL, false)
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+				<label class="flex flex-col gap-2">
+					<span class="font-mono text-xs text-muted">Markdown body</span>
+					<textarea
+						id="body_md"
+						name="body_md"
+						rows="24"
+						required
+						class="admin-input font-mono text-sm leading-relaxed resize-y"
+						hx-post="/admin/posts/preview"
+						hx-trigger="input changed delay:500ms"
+						hx-target="#markdown-preview"
+						hx-include="[name=csrf_token]"
+					>{ form.BodyMD }</textarea>
+				</label>
+				<div class="flex flex-col gap-2 lg:sticky lg:top-4">
+					<span class="font-mono text-xs text-muted">Preview</span>
+					<div id="markdown-preview" class="prose-article min-h-[300px] border border-line rounded p-5 bg-panel overflow-auto">
+						@templ.Raw(previewHTML)
+					</div>
+				</div>
+			</div>
+			if len(media) > 0 {
+				<details class="border border-line rounded p-4">
+					<summary class="font-mono text-sm cursor-pointer">Insert uploaded image</summary>
+					<div class="mt-3 flex flex-col gap-2">
+						for _, item := range media {
+							<button type="button" data-markdown={ "![" + item.OriginalFilename + "](/media/" + item.Filename + ")" } class="media-insert text-left border border-line rounded p-2 bg-panel text-sm font-mono cursor-pointer">{ item.OriginalFilename } — /media/{ item.Filename }</button>
+						}
+					</div>
+				</details>
+			}
+			<div class="flex flex-wrap gap-3 border-t border-line pt-5">
+				<button type="submit" name="action" value="draft" class="admin-button">save draft</button>
+				<button type="submit" name="action" value="publish" class="admin-button bg-ink text-bg">publish</button>
+				if form.ID != 0 && form.Status == "published" {
+					<button type="submit" name="action" value="unpublish" class="admin-button">unpublish</button>
+				}
+			</div>
+		</form>
+		if form.ID != 0 {
+			<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/delete", form.ID)) } class="mt-8 pt-5 border-t border-line" onsubmit="return confirm('Permanently delete this post?')">
+				<input type="hidden" name="csrf_token" value={ csrfToken }/>
+				<input type="hidden" name="updated_at" value={ form.UpdatedAt }/>
+				<button class="border border-warm text-warm rounded px-4 py-2 bg-transparent font-mono text-sm cursor-pointer">delete permanently</button>
+			</form>
+		}
+		<script>
+			(() => {
+				const form = document.getElementById("post-editor");
+				const body = document.getElementById("body_md");
+				let dirty = false;
+				form.addEventListener("input", () => dirty = true);
+				form.addEventListener("submit", () => dirty = false);
+				document.querySelectorAll(".media-insert").forEach((button) => button.addEventListener("click", () => {
+					const start = body.selectionStart;
+					body.setRangeText(button.dataset.markdown, start, body.selectionEnd, "end");
+					body.dispatchEvent(new Event("input", { bubbles: true }));
+				}));
+				window.addEventListener("beforeunload", (event) => {
+					if (!dirty) return;
+					event.preventDefault();
+					event.returnValue = "";
+				});
+			})();
+		</script>
+	}
+}
+
+templ AdminPreview(html string) {
+	@templ.Raw(html)
+}
+
+templ AdminMediaPage(items []db.ListMediaRow, csrfToken string, message string) {
+	@AdminLayout("Media", "media", csrfToken) {
+		<h1 class="mt-0 mb-6 text-4xl font-semibold">Media</h1>
+		if message != "" {
+			<div class="mb-5 border border-warm text-warm rounded px-4 py-3">{ message }</div>
+		}
+		<form method="post" action="/admin/media" enctype="multipart/form-data" class="border border-line rounded p-5 mb-7 flex flex-col md:flex-row gap-4 md:items-end">
+			<input type="hidden" name="csrf_token" value={ csrfToken }/>
+			<label class="flex flex-col gap-2 flex-1">
+				<span class="font-mono text-xs text-muted">JPEG, PNG, WebP or GIF — max 10 MiB</span>
+				<input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required class="admin-input"/>
+			</label>
+			<button class="admin-button bg-ink text-bg">upload</button>
+		</form>
+		<div class="flex flex-col gap-3">
+			for _, item := range items {
+				<div class="border border-line rounded p-4 grid grid-cols-1 md:grid-cols-[100px_1fr_auto] gap-4 items-center">
+					<img src={ templ.SafeURL("/media/" + item.Filename) } alt="" class="w-[100px] h-[70px] object-cover border border-line"/>
+					<div class="min-w-0">
+						<div class="font-semibold break-all">{ item.OriginalFilename }</div>
+						<div class="font-mono text-xs text-faint mt-1">{ item.MimeType } · { formatBytes(item.SizeBytes) } · { item.CreatedAt.Format("2006-01-02") }</div>
+						<code class="font-mono text-xs text-muted break-all">![{ item.OriginalFilename }](/media/{ item.Filename })</code>
+					</div>
+					if item.InUse {
+						<span class="font-mono text-xs text-muted">in use</span>
+					} else {
+						<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/media/%d/delete", item.ID)) } onsubmit="return confirm('Delete this file?')">
+							<input type="hidden" name="csrf_token" value={ csrfToken }/>
+							<button class="border border-warm text-warm rounded px-3 py-2 bg-transparent font-mono text-xs cursor-pointer">delete</button>
+						</form>
+					}
+				</div>
+			}
+		</div>
+	}
+}
+
+templ AdminSettingsPage(settings db.SiteSetting, csrfToken string, message string) {
+	@AdminLayout("Settings", "settings", csrfToken) {
+		<h1 class="mt-0 mb-6 text-4xl font-semibold">Site settings</h1>
+		if message != "" {
+			<div class="mb-5 border border-line-strong text-muted rounded px-4 py-3">{ message }</div>
+		}
+		<form method="post" action="/admin/settings" class="max-w-3xl flex flex-col gap-4">
+			<input type="hidden" name="csrf_token" value={ csrfToken }/>
+			@adminField("Display name", "display_name", "text", settings.DisplayName, true)
+			@adminField("Site handle", "site_handle", "text", settings.SiteHandle, true)
+			@adminField("Site title", "site_title", "text", settings.SiteTitle, true)
+			@adminTextArea("Site description", "site_description", settings.SiteDescription, 3)
+			@adminTextArea("Journal / RSS description", "journal_description", settings.JournalDescription, 3)
+			@adminField("Contact email", "contact_email", "email", settings.ContactEmail, true)
+			@adminField("GitHub URL", "github_url", "url", settings.GithubUrl, false)
+			@adminField("LinkedIn URL", "linkedin_url", "url", settings.LinkedinUrl, false)
+			@adminField("Instagram URL", "instagram_url", "url", settings.InstagramUrl, false)
+			<button class="admin-button bg-ink text-bg self-start">save settings</button>
+		</form>
+	}
+}
+
+templ adminField(label string, name string, inputType string, value string, required bool) {
+	<label class="flex flex-col gap-2">
+		<span class="font-mono text-xs text-muted">{ label }</span>
+		<input class="admin-input" type={ inputType } name={ name } value={ value } required?={ required }/>
+	</label>
+}
+
+templ adminTextArea(label string, name string, value string, rows int) {
+	<label class="flex flex-col gap-2">
+		<span class="font-mono text-xs text-muted">{ label }</span>
+		<textarea class="admin-input resize-y" name={ name } rows={ strconv.Itoa(rows) } required>{ value }</textarea>
+	</label>
+}
+
+templ adminSelect(label string, name string, value string) {
+	<label class="flex flex-col gap-2">
+		<span class="font-mono text-xs text-muted">{ label }</span>
+		<select class="admin-input" name={ name }>
+			<option value="software" selected?={ value == "software" }>software</option>
+			<option value="photography" selected?={ value == "photography" }>photography</option>
+		</select>
+	</label>
+}

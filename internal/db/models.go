@@ -5,8 +5,31 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
+
+type AdminSession struct {
+	TokenHash string
+	CsrfToken string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
+type LoginAttempt struct {
+	ID          int64
+	IpAddress   string
+	AttemptedAt time.Time
+}
+
+type Medium struct {
+	ID               int64
+	Filename         string
+	OriginalFilename string
+	MimeType         string
+	SizeBytes        int64
+	CreatedAt        time.Time
+}
 
 type Post struct {
 	ID          int64
@@ -17,5 +40,28 @@ type Post struct {
 	Lede        string
 	BodyMd      string
 	StoreUrl    string
-	PublishedAt time.Time
+	Status      string
+	PublishedAt sql.NullTime
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type SiteSetting struct {
+	ID                 int64
+	DisplayName        string
+	SiteHandle         string
+	SiteTitle          string
+	SiteDescription    string
+	JournalDescription string
+	ContactEmail       string
+	GithubUrl          string
+	LinkedinUrl        string
+	InstagramUrl       string
+	UpdatedAt          time.Time
+}
+
+type SlugRedirect struct {
+	OldSlug   string
+	PostID    int64
+	CreatedAt time.Time
 }

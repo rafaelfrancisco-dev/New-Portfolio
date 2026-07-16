@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 go build -ldflags='-s -w' -o /server ./cmd/server \
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build --chown=nonroot:nonroot /data /data
 COPY --from=build /server /server
-ENV ADDR=0.0.0.0:8080 APP_DB=/data/app.db DBOS_DB=/data/dbos.db
+ENV ADDR=0.0.0.0:8080 APP_DB=/data/app.db DBOS_DB=/data/dbos.db UPLOAD_DIR=/data/uploads ADMIN_USERNAME=admin
 VOLUME /data
 EXPOSE 8080
 ENTRYPOINT ["/server"]

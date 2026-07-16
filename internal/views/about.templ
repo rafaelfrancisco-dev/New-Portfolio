@@ -1,7 +1,9 @@
 package views
 
-templ AboutPage() {
-	@Layout("Rafael Francisco — About", "~/about", "about") {
+import "go-port/internal/db"
+
+templ AboutPage(settings db.SiteSetting) {
+	@Layout(settings, settings.DisplayName + " — About", "~/about", "about") {
 		<div class="grid grid-cols-1 md:grid-cols-[1fr_340px]">
 			<div class="px-6 md:px-11 py-12 md:border-r border-line flex flex-col gap-[26px]">
 				<div class="flex flex-col gap-[14px]">
@@ -33,11 +35,17 @@ templ AboutPage() {
 				</div>
 				<div class="py-[30px] px-6 md:px-[34px] flex flex-col gap-[18px]">
 					@SectionLabel("CONTACT")
-					<a href="mailto:rafael@imaginarymakings.dev" class="font-mono font-semibold text-sm text-ink no-underline hover:opacity-85 break-all">rafael@imaginarymakings.dev</a>
+					<a href={ templ.SafeURL("mailto:" + settings.ContactEmail) } class="font-mono font-semibold text-sm text-ink no-underline hover:opacity-85 break-all">{ settings.ContactEmail }</a>
 					<div class="flex flex-col gap-[9px] font-mono text-[13px] text-muted">
-						<a href="https://github.com/rafaelfrancisco" class="no-underline text-inherit hover:opacity-85">github.com/rafaelfrancisco ↗</a>
-						<a href="https://linkedin.com/in/rafaelfrancisco" class="no-underline text-inherit hover:opacity-85">linkedin.com/in/rafaelfrancisco ↗</a>
-						<a href="https://instagram.com/rafaelfrancisco" class="no-underline text-inherit hover:opacity-85">instagram.com/rafaelfrancisco ↗</a>
+						if settings.GithubUrl != "" {
+							<a href={ templ.SafeURL(settings.GithubUrl) } class="no-underline text-inherit hover:opacity-85">{ settings.GithubUrl } ↗</a>
+						}
+						if settings.LinkedinUrl != "" {
+							<a href={ templ.SafeURL(settings.LinkedinUrl) } class="no-underline text-inherit hover:opacity-85">{ settings.LinkedinUrl } ↗</a>
+						}
+						if settings.InstagramUrl != "" {
+							<a href={ templ.SafeURL(settings.InstagramUrl) } class="no-underline text-inherit hover:opacity-85">{ settings.InstagramUrl } ↗</a>
+						}
 					</div>
 					<p class="m-0 text-[13.5px] leading-[1.6] text-faint">Interested in a print? Email me — most gallery photos are available in A3 and A2.</p>
 				</div>

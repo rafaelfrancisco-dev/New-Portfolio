@@ -6,12 +6,22 @@ import (
 	"github.com/go-fuego/fuego"
 	"github.com/go-fuego/fuego/option"
 
+	"go-port/internal/markdown"
 	"go-port/static"
 )
 
 // Register mounts all routes on the fuego server. Page routes show up in the
 // generated OpenAPI spec at /swagger.
 func Register(s *fuego.Server, rs Resource) {
+	if rs.AdminUsername == "" {
+		rs.AdminUsername = "admin"
+	}
+	if rs.UploadDir == "" {
+		rs.UploadDir = "uploads"
+	}
+	if rs.Markdown == nil {
+		rs.Markdown = markdown.NewRenderer()
+	}
 	// SSR pages
 	fuego.Get(s, "/", rs.homePage,
 		option.Summary("Home page"),
@@ -53,6 +63,10 @@ func Register(s *fuego.Server, rs Resource) {
 		option.Tags("feeds"),
 	)
 
+	// Uploaded media is public, but only database-recorded randomized names
+	// can be served from the configured persistent directory.
+	fuego.GetStd(s, "/media/{filename}", rs.serveMedia, option.Hide())
+
 	// Ops
 	fuego.Get(s, "/healthz", rs.healthz,
 		option.Summary("Health check"),
@@ -63,4 +77,28 @@ func Register(s *fuego.Server, rs Resource) {
 	fuego.GetStd(s, "/static/", http.StripPrefix("/static/", http.FileServerFS(static.FS)).ServeHTTP,
 		option.Hide(),
 	)
+
+	registerAdminRoutes(s, rs)
+}
+
+func registerAdminRoutes(s *fuego.Server, rs Resource) {
+	admin := fuego.Group(s, "/admin")
+	fuego.GetStd(admin, "/login", rs.adminLoginPage, option.Hide())
+	fuego.PostStd(admin, "/login", rs.adminLogin, option.Hide())
+
+	fuego.Use(admin, rs.adminAuthMiddleware)
+	fuego.GetStd(admin, "", rs.adminDashboard, option.Hide())
+	fuego.PostStd(admin, "/logout", rs.adminLogout, option.Hide())
+	fuego.GetStd(admin, "/posts", rs.adminPosts, option.Hide())
+	fuego.GetStd(admin, "/posts/new", rs.adminNewPost, option.Hide())
+	fuego.PostStd(admin, "/posts", rs.adminCreatePost, option.Hide())
+	fuego.GetStd(admin, "/posts/{id}/edit", rs.adminEditPost, option.Hide())
+	fuego.PostStd(admin, "/posts/{id}", rs.adminUpdatePost, option.Hide())
+	fuego.PostStd(admin, "/posts/{id}/delete", rs.adminDeletePost, option.Hide())
+	fuego.PostStd(admin, "/posts/preview", rs.adminPreview, option.Hide())
+	fuego.GetStd(admin, "/media", rs.adminMedia, option.Hide())
+	fuego.PostStd(admin, "/media", rs.adminUploadMedia, option.Hide())
+	fuego.PostStd(admin, "/media/{id}/delete", rs.adminDeleteMedia, option.Hide())
+	fuego.GetStd(admin, "/settings", rs.adminSettings, option.Hide())
+	fuego.PostStd(admin, "/settings", rs.adminUpdateSettings, option.Hide())
 }

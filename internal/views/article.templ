@@ -9,11 +9,11 @@ import (
 // ArticlePage renders one journal post. bodyHTML is goldmark-rendered
 // Markdown from the trusted posts table. older/newer may be nil at the ends
 // of the archive.
-templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post) {
-	@Layout("Rafael Francisco — "+post.Title, "~/journal/"+post.Slug, "journal") {
+templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post, settings db.SiteSetting) {
+	@Layout(settings, settings.DisplayName + " — "+post.Title, "~/journal/"+post.Slug, "journal") {
 		<article class="max-w-[720px] mx-auto px-6 pt-[52px] pb-[60px] flex flex-col gap-[22px]">
 			<div class="flex gap-[14px] font-mono text-[12.5px] text-faint">
-				<span>{ post.PublishedAt.Format("2006-01-02") }</span>
+				<span>{ formatPostDate(post) }</span>
 				<span class="text-muted">{ post.Category }</span>
 				<span>{ fmt.Sprintf("· %d min read", readMinutes) }</span>
 			</div>

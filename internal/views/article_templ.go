@@ -17,7 +17,7 @@ import (
 // ArticlePage renders one journal post. bodyHTML is goldmark-rendered
 // Markdown from the trusted posts table. older/newer may be nil at the ends
 // of the archive.
-func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post) templ.Component {
+func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post, settings db.SiteSetting) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -55,9 +55,9 @@ func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post,
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(post.PublishedAt.Format("2006-01-02"))
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(formatPostDate(post))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 16, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 16, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -203,7 +203,7 @@ func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post,
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("Rafael Francisco — "+post.Title, "~/journal/"+post.Slug, "journal").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — "+post.Title, "~/journal/"+post.Slug, "journal").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

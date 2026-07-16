@@ -153,3 +153,38 @@
 	font-size: 0.92em;
 	color: var(--color-code-bright);
 }
+
+.prose-article img {
+	max-width: 100%;
+	height: auto;
+	border: 1px solid var(--color-line);
+}
+
+.admin-input {
+	width: 100%;
+	border: 1px solid var(--color-line-strong);
+	border-radius: 4px;
+	background: var(--color-panel);
+	color: var(--color-ink);
+	padding: 10px 12px;
+	outline: none;
+}
+
+.admin-input:focus {
+	border-color: var(--color-muted);
+}
+
+.admin-button {
+	border: 1px solid var(--color-line-strong);
+	border-radius: 4px;
+	padding: 10px 16px;
+	background-color: var(--color-panel);
+	color: var(--color-ink);
+	font: 600 13px var(--font-mono);
+	cursor: pointer;
+}
+
+.admin-button.bg-ink {
+	background-color: var(--color-ink);
+	color: var(--color-bg);
+}
