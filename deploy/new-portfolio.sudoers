@@ -1,0 +1,4 @@
+# The helper validates the immutable staging path and runs the resulting binary
+# as the unprivileged portfolio service account. The runner receives no general
+# sudo or Docker access.
+github ALL=(root) NOPASSWD: /usr/local/sbin/deploy-new-portfolio

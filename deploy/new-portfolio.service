@@ -1,0 +1,32 @@
+[Unit]
+Description=New Portfolio
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=portfolio
+Group=portfolio
+EnvironmentFile=/etc/new-portfolio.env
+WorkingDirectory=/srv/new-portfolio/data
+ExecStart=/opt/new-portfolio/current/server
+Restart=on-failure
+RestartSec=3s
+TimeoutStopSec=15s
+UMask=0027
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/srv/new-portfolio/data
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

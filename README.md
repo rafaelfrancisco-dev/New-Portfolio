@@ -83,6 +83,55 @@ docker run -p 8080:8080 \
 The distroless image keeps `app.db`, `dbos.db`, and uploaded media in the
 single `/data` volume. `UPLOAD_DIR` defaults to `/data/uploads` in Docker.
 
+### Production on smalljammy
+
+Production runs as a hardened systemd service under the dedicated, unprivileged
+`portfolio` account. It binds only to `127.0.0.1:8081`; Caddy is the public
+HTTPS entry point. Application data survives releases under
+`/srv/new-portfolio/data`.
+
+Prepare the host once as root:
+
+```sh
+useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin portfolio
+install -d -o portfolio -g portfolio -m 0750 /srv/new-portfolio/data
+install -d -o github -g github -m 0750 /srv/new-portfolio/staging
+install -d -o root -g root -m 0755 /opt/new-portfolio/releases
+install -o root -g root -m 0755 deploy/deploy-new-portfolio /usr/local/sbin/deploy-new-portfolio
+install -o root -g root -m 0644 deploy/new-portfolio.service /etc/systemd/system/new-portfolio.service
+install -o root -g root -m 0440 deploy/new-portfolio.sudoers /etc/sudoers.d/new-portfolio
+visudo -cf /etc/sudoers.d/new-portfolio
+systemctl daemon-reload
+systemctl enable new-portfolio.service
+```
+
+Create `/etc/new-portfolio.env` with mode `0640`, owned by `root:portfolio`:
+
+```dotenv
+ADMIN_PASSWORD_HASH=$argon2id$...
+ADMIN_USERNAME=admin
+ADDR=127.0.0.1:8081
+APP_DB=/srv/new-portfolio/data/app.db
+DBOS_DB=/srv/new-portfolio/data/dbos.db
+UPLOAD_DIR=/srv/new-portfolio/data/uploads
+```
+
+Generate the hash locally with `make adminhash`; never put the password or hash
+in Git. Then add this site to `/etc/caddy/Caddyfile` and reload Caddy:
+
+```caddyfile
+new.imaginarymakings.dev {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8081
+}
+```
+
+On pushes to `main`, CI tests and regenerates committed outputs first. After CI
+succeeds, the `Deploy to smalljammy` job builds an ARM64 binary on the
+self-hosted runner. A narrowly scoped, root-owned helper installs that binary,
+restarts only `new-portfolio.service`, verifies `/healthz`, and rolls back a
+failed release. The runner has neither Docker access nor general sudo access.
+
 ## Configuration
 
 | Variable | Default | Purpose |

@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly revision="${1:-}"
+if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+	echo "usage: deploy-new-portfolio <40-character-git-sha>" >&2
+	exit 2
+fi
+
+readonly staging_binary="/srv/new-portfolio/staging/$revision/server"
+readonly releases_dir="/opt/new-portfolio/releases"
+readonly release_dir="$releases_dir/$revision"
+readonly current_link="/opt/new-portfolio/current"
+readonly next_link="/opt/new-portfolio/current.next"
+
+if [[ ! -f "$staging_binary" || -L "$staging_binary" || ! -x "$staging_binary" ]]; then
+	echo "invalid staged binary: $staging_binary" >&2
+	exit 1
+fi
+if [[ "$(stat -c '%U:%G' "$staging_binary")" != "github:github" ]]; then
+	echo "staged binary must be owned by github:github" >&2
+	exit 1
+fi
+
+previous_release=""
+if [[ -L "$current_link" ]]; then
+	previous_release="$(readlink -f "$current_link")"
+fi
+
+install -d -o root -g root -m 0755 "$release_dir"
+install -o root -g root -m 0755 "$staging_binary" "$release_dir/server"
+ln -sfn "$release_dir" "$next_link"
+mv -Tf "$next_link" "$current_link"
+
+rollback() {
+	if [[ -n "$previous_release" ]]; then
+		ln -sfn "$previous_release" "$next_link"
+		mv -Tf "$next_link" "$current_link"
+		systemctl restart new-portfolio.service || true
+	else
+		rm -f "$current_link"
+	fi
+}
+
+if ! systemctl restart new-portfolio.service; then
+	rollback
+	exit 1
+fi
+
+if ! curl --fail --silent --show-error --retry 12 --retry-delay 2 \
+	--retry-connrefused http://127.0.0.1:8081/healthz >/dev/null; then
+	journalctl --unit new-portfolio.service --lines 50 --no-pager >&2 || true
+	rollback
+	exit 1
+fi
+
+echo "deployed new-portfolio revision $revision"

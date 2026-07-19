@@ -33,3 +33,33 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+  deploy:
+    name: Deploy to smalljammy
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, ARM64]
+    concurrency:
+      group: new-portfolio-production
+      cancel-in-progress: false
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build production binary
+        env:
+          STAGING_DIR: /srv/new-portfolio/staging/${{ github.sha }}
+        run: |
+          install -d -m 0750 "$STAGING_DIR"
+          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "$STAGING_DIR/server" ./cmd/server
+
+      - name: Deploy production service
+        run: sudo /usr/local/sbin/deploy-new-portfolio "${{ github.sha }}"
+
+      - name: Verify health endpoint
+        run: curl --fail --silent --show-error --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:8081/healthz
