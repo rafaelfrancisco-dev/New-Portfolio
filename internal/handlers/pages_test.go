@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-fuego/fuego"
 
 	"go-port/internal/auth"
 	"go-port/internal/db"
+	"go-port/internal/flickr"
 	"go-port/internal/handlers"
 )
 
@@ -37,6 +39,17 @@ func newTestServer(t *testing.T) *testServer {
 		t.Fatal(err)
 	}
 	uploadDir := filepath.Join(t.TempDir(), "uploads")
+	cipher, err := flickr.NewCipher("MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	flickrService := &flickr.Service{Store: flickr.Store{DB: sqlDB, Cipher: cipher}}
+	if err := flickrService.Store.ReplaceSnapshot(t.Context(), []flickr.AlbumPhotos{
+		{Album: flickr.Album{ID: "landscapes", Title: "landscapes", Position: 0}, Photos: []flickr.Photo{{ID: "0", Title: "schist village, dusk", PageURL: "https://www.flickr.com/photos/test/0", SmallURL: "https://live.staticflickr.com/0.jpg", LargeURL: "https://live.staticflickr.com/0_b.jpg", Width: 1200, Height: 800}}},
+		{Album: flickr.Album{ID: "wildlife", Title: "wildlife", Position: 1}, Photos: []flickr.Photo{{ID: "1", Title: "griffon vulture, Douro", PageURL: "https://www.flickr.com/photos/test/1", SmallURL: "https://live.staticflickr.com/1.jpg", LargeURL: "https://live.staticflickr.com/1_b.jpg", Width: 1200, Height: 800}, {ID: "2", Title: "otter, Rio Ceira", PageURL: "https://www.flickr.com/photos/test/2", SmallURL: "https://live.staticflickr.com/2.jpg", LargeURL: "https://live.staticflickr.com/2_b.jpg", Width: 1200, Height: 800}, {ID: "3", Title: "red kite in flight", PageURL: "https://www.flickr.com/photos/test/3", SmallURL: "https://live.staticflickr.com/3.jpg", LargeURL: "https://live.staticflickr.com/3_b.jpg", Width: 1200, Height: 800}}},
+	}, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
 
 	s := fuego.NewServer()
 	handlers.Register(s, handlers.Resource{
@@ -46,6 +59,7 @@ func newTestServer(t *testing.T) *testServer {
 		AdminUsername:     "admin",
 		AdminPasswordHash: mustPasswordHash(t, "correct horse battery staple"),
 		UploadDir:         uploadDir,
+		Flickr:            flickrService,
 	})
 	return &testServer{handler: s.Mux, db: sqlDB, uploads: uploadDir}
 }
@@ -161,7 +175,7 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 	}
 
 	// Photo 1 (griffon vulture) is wildlife; the fragment should render its
-	// modal with the placeholder EXIF panel.
+	// modal with the Flickr metadata panel.
 	status, body = get(t, ts, "/photography/photos/1?filter=wildlife")
 	if status != http.StatusOK {
 		t.Fatalf("modal status = %d, want 200", status)
@@ -174,6 +188,20 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 	status, _ = get(t, ts, "/photography/photos/0?filter=wildlife")
 	if status != http.StatusNotFound {
 		t.Fatalf("out-of-filter modal status = %d, want 404", status)
+	}
+}
+
+func TestPhotographyExpiredCacheIsUnavailable(t *testing.T) {
+	ts := newTestServer(t)
+	if _, err := ts.db.Exec(`UPDATE flickr_snapshots SET completed_at=? WHERE status='active'`, time.Now().UTC().Add(-24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	status, body := get(t, ts, "/photography")
+	if status != http.StatusOK || !strings.Contains(body, "temporarily unavailable") {
+		t.Fatalf("expired gallery = %d %s", status, body)
+	}
+	if strings.Contains(body, "red kite in flight") {
+		t.Fatal("expired photo leaked")
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/go-fuego/fuego"
 
 	"go-port/internal/db"
+	"go-port/internal/flickr"
 	"go-port/internal/handlers"
 	"go-port/internal/workflows"
 )
@@ -48,6 +49,20 @@ func run() error {
 		return err
 	}
 	queries := db.New(appDB)
+	var flickrCipher *flickr.Cipher
+	if key := os.Getenv("FLICKR_TOKEN_ENCRYPTION_KEY"); key != "" {
+		flickrCipher, err = flickr.NewCipher(key)
+		if err != nil {
+			return errors.Wrap(err, "configure Flickr token encryption")
+		}
+	}
+	flickrService := &flickr.Service{
+		Store: flickr.Store{DB: appDB, Cipher: flickrCipher},
+		Client: flickr.NewClient(flickr.Config{
+			APIKey: os.Getenv("FLICKR_API_KEY"), APISecret: os.Getenv("FLICKR_API_SECRET"),
+			PublicBaseURL: os.Getenv("PUBLIC_BASE_URL"),
+		}),
+	}
 
 	// DBOS keeps its system tables in a separate SQLite file so durable
 	// workflow bookkeeping never contends with application writes.
@@ -64,7 +79,7 @@ func run() error {
 	if err != nil {
 		return errors.Wrap(err, "create DBOS context")
 	}
-	workflows.Register(dbosCtx, queries)
+	workflows.Register(dbosCtx, flickrService)
 	if err := dbos.Launch(dbosCtx); err != nil {
 		return errors.Wrap(err, "launch DBOS")
 	}
@@ -81,6 +96,7 @@ func run() error {
 		AdminUsername:     envOr("ADMIN_USERNAME", "admin"),
 		AdminPasswordHash: adminPasswordHash,
 		UploadDir:         uploadDir,
+		Flickr:            flickrService,
 	})
 
 	// Serve until the context is cancelled by SIGINT/SIGTERM, then drain

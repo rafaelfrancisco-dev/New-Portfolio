@@ -16,6 +16,74 @@ type AdminSession struct {
 	ExpiresAt time.Time
 }
 
+type FlickrAlbum struct {
+	SnapshotID  string
+	AlbumID     string
+	Title       string
+	Description string
+	Position    int64
+}
+
+type FlickrAlbumPhoto struct {
+	SnapshotID string
+	AlbumID    string
+	PhotoID    string
+	Position   int64
+}
+
+type FlickrConnection struct {
+	ID               int64
+	UserID           string
+	Username         string
+	TokenCiphertext  []byte
+	SecretCiphertext []byte
+	ConnectedAt      time.Time
+}
+
+type FlickrOauthRequest struct {
+	StateHash        string
+	AdminSessionHash string
+	RequestToken     string
+	SecretCiphertext []byte
+	ExpiresAt        time.Time
+}
+
+type FlickrPhoto struct {
+	SnapshotID    string
+	PhotoID       string
+	Title         string
+	Description   string
+	PageUrl       string
+	ImageSmallUrl string
+	ImageLargeUrl string
+	Width         int64
+	Height        int64
+	TakenAt       string
+	Location      string
+	Camera        string
+	Lens          string
+	Exposure      string
+	Aperture      string
+	Iso           string
+	FocalLength   string
+}
+
+type FlickrSnapshot struct {
+	ID          string
+	StartedAt   time.Time
+	CompletedAt sql.NullTime
+	Status      string
+	Error       string
+}
+
+type FlickrSyncStatus struct {
+	ID               int64
+	ActiveSnapshotID sql.NullString
+	LastAttemptAt    sql.NullTime
+	LastSuccessAt    sql.NullTime
+	LastError        string
+}
+
 type LoginAttempt struct {
 	ID          int64
 	IpAddress   string

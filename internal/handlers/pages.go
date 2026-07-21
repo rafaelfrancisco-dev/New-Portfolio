@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cockroachdb/errors"
 	"github.com/dbos-inc/dbos-transact-golang/dbos"
@@ -13,6 +14,7 @@ import (
 
 	"go-port/internal/content"
 	"go-port/internal/db"
+	"go-port/internal/flickr"
 	portmarkdown "go-port/internal/markdown"
 	"go-port/internal/views"
 )
@@ -27,6 +29,7 @@ type Resource struct {
 	AdminPasswordHash string
 	UploadDir         string
 	Markdown          *portmarkdown.Renderer
+	Flickr            *flickr.Service
 }
 
 func (rs Resource) siteSettings(ctx context.Context) (db.SiteSetting, error) {
@@ -65,43 +68,35 @@ func (rs Resource) aboutPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	return views.AboutPage(settings), nil
 }
 
-// galleryFilter normalizes the ?filter= query param to a known value.
-func galleryFilter(c fuego.ContextNoBody) string {
-	f := c.QueryParam("filter")
-	if f != "landscapes" && f != "wildlife" {
-		f = "all"
-	}
-	return f
-}
-
 func (rs Resource) photographyPage(c fuego.ContextNoBody) (fuego.Templ, error) {
-	filter := galleryFilter(c)
 	settings, err := rs.siteSettings(c.Context())
 	if err != nil {
 		return nil, err
 	}
-	return views.PhotographyPage(filter, content.FilterPhotos(filter), settings), nil
+	if rs.Flickr == nil {
+		return views.PhotographyPage(flickr.Gallery{}, settings), nil
+	}
+	gallery, err := rs.Flickr.Store.Gallery(c.Context(), c.QueryParam("filter"), time.Now().UTC())
+	if err != nil {
+		return nil, errors.Wrap(err, "load Flickr gallery")
+	}
+	return views.PhotographyPage(gallery, settings), nil
 }
 
 // photoDetail returns the modal fragment for one gallery photo; prev/next
 // wrap around within the current filter.
 func (rs Resource) photoDetail(c fuego.ContextNoBody) (fuego.Templ, error) {
-	filter := galleryFilter(c)
-	photos := content.FilterPhotos(filter)
-	index := c.PathParamInt("index")
-	pos := -1
-	for i, p := range photos {
-		if p.Index == index {
-			pos = i
-			break
-		}
-	}
-	if pos == -1 {
+	if rs.Flickr == nil {
 		return nil, fuego.NotFoundError{Detail: "photo not found"}
 	}
-	prev := photos[(pos-1+len(photos))%len(photos)].Index
-	next := photos[(pos+1)%len(photos)].Index
-	return views.PhotoDetail(photos[pos], prev, next, filter), nil
+	photo, prev, next, filter, err := rs.Flickr.Store.Photo(c.Context(), c.PathParam("photoID"), c.QueryParam("filter"), time.Now().UTC())
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fuego.NotFoundError{Detail: "photo not found"}
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "load Flickr photo")
+	}
+	return views.PhotoDetail(photo, prev, next, filter), nil
 }
 
 func (rs Resource) journalPage(c fuego.ContextNoBody) (fuego.Templ, error) {

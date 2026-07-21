@@ -117,6 +117,37 @@ func TestAdminAuthorizationLoginLogoutAndCookieSecurity(t *testing.T) {
 	}
 }
 
+func TestAdminFlickrAuthorizationCSRFAndMissingCredentials(t *testing.T) {
+	server := newTestServer(t)
+	unauthorized := server.do(t, httptest.NewRequest(http.MethodGet, "http://example.com/admin/flickr", nil))
+	if unauthorized.Code != http.StatusSeeOther {
+		t.Fatalf("unauthorized Flickr status = %d", unauthorized.Code)
+	}
+	client := loginAdmin(t, server)
+	page := client.request(t, http.MethodGet, "/admin/flickr", nil, false)
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "FLICKR_API_KEY") {
+		t.Fatalf("Flickr settings = %d %s", page.Code, page.Body.String())
+	}
+	if got := client.request(t, http.MethodPost, "/admin/flickr/connect", nil, false).Code; got != http.StatusForbidden {
+		t.Fatalf("connect without CSRF = %d", got)
+	}
+	if got := client.request(t, http.MethodPost, "/admin/flickr/connect", nil, true).Code; got != http.StatusServiceUnavailable {
+		t.Fatalf("connect without credentials = %d", got)
+	}
+	callback := client.request(t, http.MethodGet, "/admin/flickr/callback?state=bad&oauth_token=bad&oauth_verifier=bad", nil, false)
+	if callback.Code != http.StatusServiceUnavailable {
+		t.Fatalf("callback without credentials = %d", callback.Code)
+	}
+	disconnect := client.request(t, http.MethodPost, "/admin/flickr/disconnect", nil, true)
+	if disconnect.Code != http.StatusSeeOther {
+		t.Fatalf("disconnect = %d", disconnect.Code)
+	}
+	var photos int
+	if err := server.db.QueryRow(`SELECT COUNT(*) FROM flickr_photos`).Scan(&photos); err != nil || photos != 0 {
+		t.Fatalf("cached photos after disconnect = %d, %v", photos, err)
+	}
+}
+
 func TestAdminSecureCookieAndExpiredSession(t *testing.T) {
 	server := newTestServer(t)
 	getLogin := server.do(t, httptest.NewRequest(http.MethodGet, "https://example.com/admin/login", nil))

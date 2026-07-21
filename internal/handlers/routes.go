@@ -33,7 +33,7 @@ func Register(s *fuego.Server, rs Resource) {
 	)
 	fuego.Get(s, "/photography", rs.photographyPage,
 		option.Summary("Photography gallery"),
-		option.Query("filter", "Gallery filter: all, landscapes or wildlife"),
+		option.Query("filter", "Gallery filter: all or an opaque Flickr album ID"),
 		option.Tags("pages"),
 	)
 	fuego.Get(s, "/journal", rs.journalPage,
@@ -51,7 +51,7 @@ func Register(s *fuego.Server, rs Resource) {
 	)
 
 	// HTMX fragments
-	fuego.Get(s, "/photography/photos/{index}", rs.photoDetail,
+	fuego.Get(s, "/photography/photos/{photoID}", rs.photoDetail,
 		option.Summary("Photo detail modal fragment"),
 		option.Query("filter", "Gallery filter the modal navigates within"),
 		option.Hide(),
@@ -101,4 +101,9 @@ func registerAdminRoutes(s *fuego.Server, rs Resource) {
 	fuego.PostStd(admin, "/media/{id}/delete", rs.adminDeleteMedia, option.Hide())
 	fuego.GetStd(admin, "/settings", rs.adminSettings, option.Hide())
 	fuego.PostStd(admin, "/settings", rs.adminUpdateSettings, option.Hide())
+	fuego.GetStd(admin, "/flickr", rs.adminFlickr, option.Hide())
+	fuego.PostStd(admin, "/flickr/connect", rs.adminFlickrConnect, option.Hide())
+	fuego.GetStd(admin, "/flickr/callback", rs.adminFlickrCallback, option.Hide())
+	fuego.PostStd(admin, "/flickr/sync", rs.adminFlickrSync, option.Hide())
+	fuego.PostStd(admin, "/flickr/disconnect", rs.adminFlickrDisconnect, option.Hide())
 }

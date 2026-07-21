@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"go-port/internal/db"
 )
@@ -54,6 +55,7 @@ templ AdminLayout(title string, active string, csrfToken string) {
 					@adminNav("/admin/posts", "posts", active)
 					@adminNav("/admin/media", "media", active)
 					@adminNav("/admin/settings", "settings", active)
+					@adminNav("/admin/flickr", "flickr", active)
 					<a href="/" class="text-muted no-underline">view site ↗</a>
 				</nav>
 				<form method="post" action="/admin/logout">
@@ -66,6 +68,33 @@ templ AdminLayout(title string, active string, csrfToken string) {
 			</main>
 		</body>
 	</html>
+}
+
+templ AdminFlickrPage(connected bool, username string, lastAttempt time.Time, lastSuccess time.Time, lastError string, csrfToken string, message string) {
+	@AdminLayout("Flickr", "flickr", csrfToken) {
+		<h1 class="mt-0 mb-6 text-4xl font-semibold">Flickr</h1>
+		if message != "" {
+			<div class="mb-5 border border-line-strong text-muted rounded px-4 py-3">{ message }</div>
+		}
+		<div class="max-w-3xl border border-line rounded p-5 bg-panel flex flex-col gap-4">
+			if connected {
+				<div><div class="font-mono text-xs text-faint">CONNECTED ACCOUNT</div><div class="mt-1 font-semibold">{ username }</div></div>
+				if !lastSuccess.IsZero() {
+					<div class="font-mono text-xs text-muted">Last successful sync: { lastSuccess.UTC().Format("2006-01-02 15:04 UTC") }</div>
+				}
+				if !lastAttempt.IsZero() && lastSuccess.IsZero() {
+					<div class="font-mono text-xs text-muted">Last attempt: { lastAttempt.UTC().Format("2006-01-02 15:04 UTC") }</div>
+				}
+				if lastError != "" {
+					<div class="border border-warm text-warm rounded px-3 py-2 text-sm">{ lastError }</div>
+				}
+				<div class="flex flex-wrap gap-3"><form method="post" action="/admin/flickr/sync"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="admin-button bg-ink text-bg">sync now</button></form><form method="post" action="/admin/flickr/disconnect" onsubmit="return confirm('Disconnect Flickr and remove the cached gallery?')"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="border border-warm text-warm rounded px-4 py-2 bg-transparent font-mono text-sm cursor-pointer">disconnect</button></form></div>
+			} else {
+				<p class="m-0 text-muted">Connect with read-only permission. Only photos that Flickr confirms are public will be cached and displayed.</p>
+				<form method="post" action="/admin/flickr/connect"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="admin-button bg-ink text-bg">connect Flickr</button></form>
+			}
+		</div>
+	}
 }
 
 templ adminNav(href string, label string, active string) {
