@@ -49,6 +49,10 @@ func Register(s *fuego.Server, rs Resource) {
 		option.Summary("About & contact"),
 		option.Tags("pages"),
 	)
+	fuego.Get(s, "/lightroom", rs.lightroomPage,
+		option.Summary("Lightroom plug-ins"),
+		option.Tags("pages"),
+	)
 
 	// HTMX fragments
 	fuego.Get(s, "/photography/photos/{photoID}", rs.photoDetail,

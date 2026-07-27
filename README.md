@@ -14,7 +14,7 @@ Rafael Francisco's portfolio site — software projects, photography gallery, an
 | Migrations | [goose](https://github.com/pressly/goose) — embedded, applied at startup |
 | Durable workflows | [DBOS](https://github.com/dbos-inc/dbos-transact-golang) — SQLite system DB via `Config.SqliteSystemDB` |
 
-Pages: home (`/`), `/software` (hardcoded project list in `internal/content`), `/photography` (public Flickr albums cached in SQLite; photo details are HTMX fragments), `/journal` (published Markdown posts from SQLite plus RSS at `/journal/feed.xml`) and `/about`. A protected `/admin` backoffice manages journal drafts/publication, uploaded images, site identity/contact settings, and the read-only Flickr connection. IBM Plex fonts are self-hosted and embedded. DBOS refreshes the Flickr cache every 12 hours.
+Pages: home (`/`), `/software` (hardcoded project list in `internal/content`), `/photography` (public Flickr albums cached in SQLite; photo details are HTMX fragments), `/journal` (published Markdown posts from SQLite plus RSS at `/journal/feed.xml`), `/about` and `/lightroom` (hardcoded plug-in list in `internal/content`, downloads link to GitHub releases). A protected `/admin` backoffice manages journal drafts/publication, uploaded images, site identity/contact settings, and the read-only Flickr connection. IBM Plex fonts are self-hosted and embedded. DBOS refreshes the Flickr cache every 12 hours.
 
 ## Quick start
 

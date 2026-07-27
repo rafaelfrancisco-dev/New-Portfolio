@@ -1,0 +1,111 @@
+package views
+
+import (
+	"strings"
+
+	"go-port/internal/content"
+	"go-port/internal/db"
+)
+
+templ LightroomPage(plugins []content.Plugin, settings db.SiteSetting) {
+	@Layout(settings, settings.DisplayName + " — Lightroom", "~/lightroom", "lightroom") {
+		<div class="px-6 md:px-11 pt-12 pb-7 flex flex-col gap-[14px] border-b border-line">
+			@SectionLabel("05 — LIGHTROOM")
+			<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Plug-ins</h1>
+			<p class="m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty">Two plug-ins for Lightroom Classic on macOS, written for my own catalogue and kept small on purpose. Both run entirely on your Mac — no account, no upload, no API key. Free and open source.</p>
+		</div>
+		for _, p := range plugins {
+			@pluginBlock(p)
+		}
+		@installSteps()
+	}
+}
+
+// pluginBlock is one plug-in: what it does on the left, what you need and how
+// to get it on the right.
+templ pluginBlock(p content.Plugin) {
+	<div class="grid grid-cols-1 md:grid-cols-[1fr_340px] border-b border-line">
+		<div class="px-6 md:px-11 py-11 md:border-r border-line flex flex-col gap-[22px]">
+			<div class="flex flex-col gap-[10px]">
+				<h2 class="m-0 text-[26px] font-semibold tracking-[-.01em]">{ p.Name }</h2>
+				<p class="m-0 text-[17px] leading-[1.65] text-muted max-w-[58ch] text-pretty">{ p.Tagline }</p>
+			</div>
+			<ul class="m-0 p-0 list-none flex flex-col gap-[11px] max-w-[62ch]">
+				for _, feature := range p.Features {
+					<li class="grid grid-cols-[13px_1fr] gap-1 text-[14.5px] leading-[1.6] text-muted">
+						<span class="font-mono text-faint" aria-hidden="true">·</span>
+						<span class="text-pretty">{ feature }</span>
+					</li>
+				}
+			</ul>
+			<div class="flex flex-col gap-[7px] border-l-2 border-line-strong pl-[15px]">
+				@SectionLabel("FIRST RUN")
+				<p class="m-0 text-[13.5px] leading-[1.6] text-muted max-w-[54ch]">{ p.FirstRun }</p>
+			</div>
+		</div>
+		<aside class="px-6 md:px-[34px] py-11 flex flex-col gap-[22px]">
+			<div class="flex flex-col">
+				@specRow("VERSION", []string{p.Version})
+				@specRow("REQUIRES", p.Requires)
+				@specRow("LICENSE", []string{p.License})
+			</div>
+			<div class="flex flex-col gap-[11px]">
+				@downloadLink(p)
+				<a href={ templ.SafeURL(p.RepoURL) } class="font-mono text-[12.5px] text-muted no-underline hover:opacity-85">Source on GitHub ↗</a>
+			</div>
+		</aside>
+	</div>
+}
+
+// downloadLink shows the bundle you are about to install rather than a generic
+// button, so the filename in the sidebar matches the folder you hand to
+// Lightroom's Plug-in Manager.
+templ downloadLink(p content.Plugin) {
+	<a
+		href={ templ.SafeURL(p.DownloadURL) }
+		class="flex items-baseline justify-between gap-3 border border-line-strong rounded px-[13px] py-[11px] font-mono text-[12.5px] text-ink no-underline hover:opacity-85"
+	>
+		<span class="break-all">
+			{ strings.TrimSuffix(p.Bundle, ".lrplugin") }<span class="text-warm">.lrplugin</span>.zip
+		</span>
+		<span class="text-faint" aria-hidden="true">↓</span>
+	</a>
+}
+
+templ specRow(label string, values []string) {
+	<div class="grid grid-cols-[88px_1fr] gap-3 py-[9px] border-t border-line">
+		<span class="font-mono font-medium text-[11.5px] tracking-[.08em] text-faint">{ label }</span>
+		<span class="flex flex-col gap-[3px] text-[13px] leading-[1.5] text-muted">
+			for _, value := range values {
+				<span>{ value }</span>
+			}
+		</span>
+	</div>
+}
+
+// installSteps documents the install once — it is identical for both plug-ins.
+templ installSteps() {
+	<div class="px-6 md:px-11 py-11 flex flex-col gap-[18px]">
+		@SectionLabel("INSTALLING")
+		<div class="flex flex-col max-w-[70ch]">
+			@installStep("01", "Unzip the download.") {
+			}
+			@installStep("02", "Clear the quarantine flag macOS puts on downloaded files. The helpers are signed, but not notarized, so Lightroom cannot launch them until you do:") {
+				<code class="font-mono text-[12.5px] text-code bg-panel border border-line rounded px-2.5 py-2 block overflow-x-auto">xattr -dr com.apple.quarantine <span class="text-faint">&lt;the .lrplugin folder&gt;</span></code>
+			}
+			@installStep("03", "In Lightroom Classic, choose File → Plug-in Manager → Add and select the .lrplugin folder.") {
+			}
+		</div>
+		<p class="m-0 text-[13.5px] leading-[1.6] text-faint max-w-[62ch]">Both plug-ins need Lightroom Classic. Adobe only offers plug-ins there, not in the cloud-based app named simply Lightroom.</p>
+	</div>
+}
+
+templ installStep(number string, text string) {
+	<div class="grid grid-cols-[34px_1fr] gap-2 md:gap-4 py-[15px] border-t border-line">
+		<span class="font-mono text-[12.5px] text-faint">{ number }</span>
+		<span class="flex flex-col gap-2.5 text-[14.5px] leading-[1.6] text-muted text-pretty">
+			<span>{ text }</span>
+			{ children... }
+		</span>
+	</div>
+}

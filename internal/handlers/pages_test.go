@@ -104,6 +104,7 @@ func TestPagesRender(t *testing.T) {
 		{"/photography", "red kite in flight"},
 		{"/journal", "Notes from the field"},
 		{"/about", "Olá, I'm Rafael."},
+		{"/lightroom", "Vision Keywords"},
 	}
 	for _, tt := range tests {
 		status, body := get(t, ts, tt.path)

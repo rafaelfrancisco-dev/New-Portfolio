@@ -70,6 +70,14 @@ func (rs Resource) softwarePage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	return views.SoftwarePage(content.Projects, settings), nil
 }
 
+func (rs Resource) lightroomPage(c fuego.ContextNoBody) (fuego.Templ, error) {
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.LightroomPage(content.Plugins, settings), nil
+}
+
 func (rs Resource) aboutPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	settings, err := rs.siteSettings(c.Context())
 	if err != nil {
