@@ -33,7 +33,7 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 		} else if len(gallery.Photos) == 0 {
 			<p class="px-6 md:px-11 pb-11 text-muted">This album has no public photos.</p>
 		} else {
-			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11 items-start">
+			<div id="masonry-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11 items-start">
 				for _, ph := range gallery.Photos {
 					<a href={ templ.SafeURL(ph.PageURL) } hx-get={ photoDetailURL(ph.ID, gallery.Filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="relative overflow-hidden border border-line no-underline block bg-tile hover:opacity-85">
 						<img src={ templ.SafeURL(ph.SmallURL) } srcset={ ph.SmallURL + " 640w, " + ph.LargeURL + " 1600w" } sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw" width={ fmt.Sprint(ph.Width) } height={ fmt.Sprint(ph.Height) } alt={ ph.Title } loading="lazy" class="block w-full h-auto"/>
@@ -41,6 +41,35 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 					</a>
 				}
 			</div>
+			<script>
+				(function(){
+					var grid = document.getElementById('masonry-grid');
+					if (!grid) return;
+					var GAP = 14, ROW = 2;
+					function layout() {
+						grid.style.rowGap = '0px';
+						grid.style.gridAutoRows = ROW + 'px';
+						var items = grid.children, heights = [], i;
+						for (i = 0; i < items.length; i++) heights.push(items[i].getBoundingClientRect().height);
+						for (i = 0; i < items.length; i++) items[i].style.gridRowEnd = 'span ' + Math.max(1, Math.round((heights[i] + GAP) / ROW));
+					}
+					var pending = false;
+					function schedule() {
+						if (pending) return;
+						pending = true;
+						requestAnimationFrame(function(){ pending = false; layout(); });
+					}
+					layout();
+					window.addEventListener('resize', schedule);
+					window.addEventListener('load', schedule);
+					// Tiles resize when the viewport changes and when a lazy image
+					// finally decodes at its true aspect ratio; re-measure either way.
+					if (window.ResizeObserver) {
+						var observer = new ResizeObserver(schedule);
+						for (var n = 0; n < grid.children.length; n++) observer.observe(grid.children[n]);
+					}
+				})();
+			</script>
 		}
 		<div id="photo-modal"></div>
 		<script>document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){const m=document.getElementById('photo-modal');if(m)m.innerHTML='';}});</script>

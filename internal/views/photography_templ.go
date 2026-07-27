@@ -96,7 +96,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11 items-start\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div id=\"masonry-grid\" class=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11 items-start\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -210,7 +210,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><script>\n\t\t\t\t(function(){\n\t\t\t\t\tvar grid = document.getElementById('masonry-grid');\n\t\t\t\t\tif (!grid) return;\n\t\t\t\t\tvar GAP = 14, ROW = 2;\n\t\t\t\t\tfunction layout() {\n\t\t\t\t\t\tgrid.style.rowGap = '0px';\n\t\t\t\t\t\tgrid.style.gridAutoRows = ROW + 'px';\n\t\t\t\t\t\tvar items = grid.children, heights = [], i;\n\t\t\t\t\t\tfor (i = 0; i < items.length; i++) heights.push(items[i].getBoundingClientRect().height);\n\t\t\t\t\t\tfor (i = 0; i < items.length; i++) items[i].style.gridRowEnd = 'span ' + Math.max(1, Math.round((heights[i] + GAP) / ROW));\n\t\t\t\t\t}\n\t\t\t\t\tvar pending = false;\n\t\t\t\t\tfunction schedule() {\n\t\t\t\t\t\tif (pending) return;\n\t\t\t\t\t\tpending = true;\n\t\t\t\t\t\trequestAnimationFrame(function(){ pending = false; layout(); });\n\t\t\t\t\t}\n\t\t\t\t\tlayout();\n\t\t\t\t\twindow.addEventListener('resize', schedule);\n\t\t\t\t\twindow.addEventListener('load', schedule);\n\t\t\t\t\t// Tiles resize when the viewport changes and when a lazy image\n\t\t\t\t\t// finally decodes at its true aspect ratio; re-measure either way.\n\t\t\t\t\tif (window.ResizeObserver) {\n\t\t\t\t\t\tvar observer = new ResizeObserver(schedule);\n\t\t\t\t\t\tfor (var n = 0; n < grid.children.length; n++) observer.observe(grid.children[n]);\n\t\t\t\t\t}\n\t\t\t\t})();\n\t\t\t</script>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -262,7 +262,7 @@ func galleryFilter(key string, label string, current string) templ.Component {
 		var templ_7745c5c3_Var13 templ.SafeURL
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/photography?filter=" + url.QueryEscape(key)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 51, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 80, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -288,7 +288,7 @@ func galleryFilter(key string, label string, current string) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 51, Col: 260}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 80, Col: 260}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -330,7 +330,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.ResolveAttributeValue(templ.SafeURL(ph.LargeURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 58, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 87, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 		if templ_7745c5c3_Err != nil {
@@ -343,7 +343,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprint(ph.Width))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 58, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 87, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 		if templ_7745c5c3_Err != nil {
@@ -356,7 +356,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprint(ph.Height))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 58, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 87, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 		if templ_7745c5c3_Err != nil {
@@ -369,7 +369,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.ResolveAttributeValue(ph.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 58, Col: 122}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 87, Col: 122}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20)
 		if templ_7745c5c3_Err != nil {
@@ -382,7 +382,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(ph.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 63, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 92, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -400,7 +400,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 			var templ_7745c5c3_Var22 string
 			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(ph.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 65, Col: 106}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 94, Col: 106}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 			if templ_7745c5c3_Err != nil {
@@ -454,7 +454,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var23 templ.SafeURL
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(ph.PageURL))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 78, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 107, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -467,7 +467,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(prev, filter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 79, Col: 133}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 108, Col: 133}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 		if templ_7745c5c3_Err != nil {
@@ -480,7 +480,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(next, filter))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 79, Col: 289}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 108, Col: 289}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 		if templ_7745c5c3_Err != nil {
@@ -522,7 +522,7 @@ func exifRow(key string, value string) templ.Component {
 		var templ_7745c5c3_Var27 string
 		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(key)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 87, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 116, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
@@ -536,7 +536,7 @@ func exifRow(key string, value string) templ.Component {
 			var templ_7745c5c3_Var28 string
 			templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 90, Col: 11}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 119, Col: 11}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 			if templ_7745c5c3_Err != nil {
