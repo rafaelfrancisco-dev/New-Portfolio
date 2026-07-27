@@ -193,7 +193,7 @@ func (s *flexString) UnmarshalJSON(data []byte) error {
 	case string:
 		*s = flexString(v)
 	case float64:
-		*s = flexString(strconv.FormatInt(int64(v), 10))
+		*s = flexString(strconv.FormatFloat(v, 'f', -1, 64))
 	case nil:
 		*s = ""
 	default:
@@ -243,8 +243,8 @@ type photoJSON struct {
 	HeightL     flexString   `json:"height_l"`
 	WidthO      flexString   `json:"width_o"`
 	HeightO     flexString   `json:"height_o"`
-	Latitude    string       `json:"latitude"`
-	Longitude   string       `json:"longitude"`
+	Latitude    flexString   `json:"latitude"`
+	Longitude   flexString   `json:"longitude"`
 }
 
 func (c *Client) Albums(ctx context.Context, token Token, userID string) ([]Album, error) {
@@ -306,8 +306,8 @@ func (c *Client) AlbumPhotos(ctx context.Context, token Token, userID string, al
 			photo.LargeURL = first(p.URLO, p.URLL, staticImageURL(p, "b"), photo.SmallURL)
 			photo.Width = parseInt(string(p.WidthO), string(p.WidthL), string(p.WidthM))
 			photo.Height = parseInt(string(p.HeightO), string(p.HeightL), string(p.HeightM))
-			if photo.Location == "" && (p.Latitude != "0" || p.Longitude != "0") {
-				photo.Location = strings.Trim(p.Latitude+", "+p.Longitude, ", ")
+			if photo.Location == "" && (string(p.Latitude) != "0" || string(p.Longitude) != "0") {
+				photo.Location = strings.Trim(string(p.Latitude)+", "+string(p.Longitude), ", ")
 			}
 			_ = c.addEXIF(ctx, token, &photo)
 			out = append(out, photo)

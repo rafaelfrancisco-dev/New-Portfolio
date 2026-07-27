@@ -71,7 +71,7 @@ func TestClientHandlesStringPaginationFields(t *testing.T) {
 		case "flickr.photosets.getList":
 			return jsonResponse(`{"stat":"ok","photosets":{"page":"1","pages":"1","photoset":[{"id":"a","title":{"_content":"A"},"description":{"_content":"d"}}]}}`), nil
 		case "flickr.photosets.getPhotos":
-			return jsonResponse(`{"stat":"ok","photoset":{"page":"1","pages":"1","photo":[{"id":"p","title":"P"}]}}`), nil
+			return jsonResponse(`{"stat":"ok","photoset":{"page":"1","pages":"1","photo":[{"id":"p","title":"P","latitude":40.1,"longitude":-8.2}]}}`), nil
 		case "flickr.photos.getInfo":
 			return jsonResponse(`{"stat":"ok","photo":{"visibility":{"ispublic":1},"urls":{"url":[{"_content":"https://flickr.test/p"}]}}}`), nil
 		case "flickr.photos.getExif":
