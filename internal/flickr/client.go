@@ -202,6 +202,30 @@ func (s *flexString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type flexInt int
+
+func (n *flexInt) UnmarshalJSON(data []byte) error {
+	var value any
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	switch v := value.(type) {
+	case float64:
+		*n = flexInt(int(v))
+	case string:
+		parsed, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("expected int or numeric string")
+		}
+		*n = flexInt(parsed)
+	case nil:
+		*n = 0
+	default:
+		return fmt.Errorf("expected int or numeric string")
+	}
+	return nil
+}
+
 type photoJSON struct {
 	ID          string       `json:"id"`
 	Title       string       `json:"title"`
@@ -228,7 +252,7 @@ func (c *Client) Albums(ctx context.Context, token Token, userID string) ([]Albu
 	for page := 1; ; page++ {
 		var response struct {
 			Photosets struct {
-				Page, Pages int
+				Page, Pages flexInt
 				Items       []albumJSON `json:"photoset"`
 			} `json:"photosets"`
 		}
@@ -239,7 +263,7 @@ func (c *Client) Albums(ctx context.Context, token Token, userID string) ([]Albu
 		for _, a := range response.Photosets.Items {
 			out = append(out, Album{a.ID, a.Title.Content, a.Description.Content, len(out)})
 		}
-		if page >= response.Photosets.Pages || response.Photosets.Pages == 0 {
+		if page >= int(response.Photosets.Pages) || response.Photosets.Pages == 0 {
 			return out, nil
 		}
 	}
@@ -258,7 +282,7 @@ func (c *Client) AlbumPhotos(ctx context.Context, token Token, userID string, al
 	for page := 1; ; page++ {
 		var response struct {
 			Photoset struct {
-				Page, Pages int
+				Page, Pages flexInt
 				Owner       string
 				Items       []photoJSON `json:"photo"`
 			} `json:"photoset"`
@@ -288,7 +312,7 @@ func (c *Client) AlbumPhotos(ctx context.Context, token Token, userID string, al
 			_ = c.addEXIF(ctx, token, &photo)
 			out = append(out, photo)
 		}
-		if page >= response.Photoset.Pages || response.Photoset.Pages == 0 {
+		if page >= int(response.Photoset.Pages) || response.Photoset.Pages == 0 {
 			return out, nil
 		}
 	}

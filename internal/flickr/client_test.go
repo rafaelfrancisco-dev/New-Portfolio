@@ -64,6 +64,33 @@ func TestClientPaginationPublicEnforcementAndOptionalEXIF(t *testing.T) {
 	}
 }
 
+func TestClientHandlesStringPaginationFields(t *testing.T) {
+	client := NewClient(Config{APIKey: "key", APISecret: "secret", PublicBaseURL: "https://portfolio.test", RESTURL: "https://api.test/rest"})
+	client.HTTP.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Query().Get("method") {
+		case "flickr.photosets.getList":
+			return jsonResponse(`{"stat":"ok","photosets":{"page":"1","pages":"1","photoset":[{"id":"a","title":{"_content":"A"},"description":{"_content":"d"}}]}}`), nil
+		case "flickr.photosets.getPhotos":
+			return jsonResponse(`{"stat":"ok","photoset":{"page":"1","pages":"1","photo":[{"id":"p","title":"P"}]}}`), nil
+		case "flickr.photos.getInfo":
+			return jsonResponse(`{"stat":"ok","photo":{"visibility":{"ispublic":1},"urls":{"url":[{"_content":"https://flickr.test/p"}]}}}`), nil
+		case "flickr.photos.getExif":
+			return jsonResponse(`{"stat":"fail","code":2,"message":"Permission denied"}`), nil
+		default:
+			t.Errorf("unexpected method %q", r.URL.Query().Get("method"))
+			return jsonResponse(`{"stat":"fail","code":1,"message":"unexpected"}`), nil
+		}
+	})
+	albums, err := client.Albums(t.Context(), Token{Value: "token", Secret: "token-secret"}, "user")
+	if err != nil || len(albums) != 1 {
+		t.Fatalf("albums = %+v, %v", albums, err)
+	}
+	photos, err := client.AlbumPhotos(t.Context(), Token{Value: "token", Secret: "token-secret"}, "user", albums[0])
+	if err != nil || len(photos) != 1 {
+		t.Fatalf("photos = %+v, %v", photos, err)
+	}
+}
+
 func TestClientAPIErrorsAndTimeout(t *testing.T) {
 	client := NewClient(Config{APIKey: "key", APISecret: "secret", PublicBaseURL: "https://portfolio.test", RESTURL: "https://api.test/rest"})
 	client.HTTP.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
