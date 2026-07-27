@@ -95,7 +95,7 @@ func TestAdminAuthorizationLoginLogoutAndCookieSecurity(t *testing.T) {
 	}
 
 	client := loginAdmin(t, server)
-	if !client.session.HttpOnly || client.session.SameSite != http.SameSiteStrictMode || client.session.Secure {
+	if !client.session.HttpOnly || client.session.SameSite != http.SameSiteLaxMode || client.session.Secure {
 		t.Fatalf("unexpected HTTP cookie flags: %+v", client.session)
 	}
 	dashboard := client.request(t, http.MethodGet, "/admin", nil, false)
