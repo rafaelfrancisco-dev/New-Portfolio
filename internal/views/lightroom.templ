@@ -30,7 +30,7 @@ templ pluginBlock(p content.Plugin) {
 				<h2 class="m-0 text-[26px] font-semibold tracking-[-.01em]">{ p.Name }</h2>
 				<p class="m-0 text-[17px] leading-[1.65] text-muted max-w-[58ch] text-pretty">{ p.Tagline }</p>
 			</div>
-			<ul class="m-0 p-0 list-none flex flex-col gap-[11px] max-w-[62ch]">
+			<ul class="m-0 p-0 list-none grid grid-cols-1 lg:grid-cols-2 gap-[11px] lg:gap-x-9 lg:gap-y-[13px] items-start">
 				for _, feature := range p.Features {
 					<li class="grid grid-cols-[13px_1fr] gap-1 text-[14.5px] leading-[1.6] text-muted">
 						<span class="font-mono text-faint" aria-hidden="true">·</span>
