@@ -49,7 +49,17 @@ func (rs Resource) homePage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil {
 		return nil, err
 	}
-	return views.HomePage(posts, settings), nil
+	var (
+		photo    flickr.Photo
+		hasPhoto bool
+	)
+	if rs.Flickr != nil {
+		photo, hasPhoto, err = rs.Flickr.Store.RandomPhoto(c.Context(), time.Now().UTC())
+		if err != nil {
+			return nil, errors.Wrap(err, "load random Flickr photo")
+		}
+	}
+	return views.HomePage(posts, settings, photo, hasPhoto), nil
 }
 
 func (rs Resource) softwarePage(c fuego.ContextNoBody) (fuego.Templ, error) {

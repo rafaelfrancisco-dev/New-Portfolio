@@ -2,11 +2,12 @@ package flickr
 
 import (
 	"context"
-	"crypto/rand"
+	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -155,7 +156,7 @@ func (s Store) Status(ctx context.Context, now time.Time) (Status, error) {
 
 func snapshotID() (string, error) {
 	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
+	if _, err := cryptorand.Read(b); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
@@ -300,4 +301,19 @@ func (s Store) Photo(ctx context.Context, id, filter string, now time.Time) (Pho
 		}
 	}
 	return Photo{}, "", "", "", sql.ErrNoRows
+}
+
+// RandomPhoto returns one photo picked at random from the full synced
+// gallery, for spots like the home page teaser that don't need the whole
+// grid. The bool is false when Flickr isn't connected, hasn't synced
+// recently enough, or has no photos.
+func (s Store) RandomPhoto(ctx context.Context, now time.Time) (Photo, bool, error) {
+	gallery, err := s.Gallery(ctx, "all", now)
+	if err != nil {
+		return Photo{}, false, err
+	}
+	if !gallery.Available || len(gallery.Photos) == 0 {
+		return Photo{}, false, nil
+	}
+	return gallery.Photos[rand.Intn(len(gallery.Photos))], true, nil
 }

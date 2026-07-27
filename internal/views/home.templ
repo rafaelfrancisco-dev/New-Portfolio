@@ -1,8 +1,13 @@
 package views
 
-import "go-port/internal/db"
+import (
+	"fmt"
 
-templ HomePage(posts []db.Post, settings db.SiteSetting) {
+	"go-port/internal/db"
+	"go-port/internal/flickr"
+)
+
+templ HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasPhoto bool) {
 	@Layout(settings, settings.SiteTitle, "~/coimbra-pt", "") {
 		<div class="px-6 md:px-11 pt-14 pb-11 flex flex-col gap-[18px] border-b border-line">
 			<h1 class="m-0 text-[42px] leading-[1.15] font-semibold tracking-[-.01em] max-w-[26ch]">I build iOS apps and photograph the wild bits of Portugal.</h1>
@@ -23,9 +28,16 @@ templ HomePage(posts []db.Post, settings db.SiteSetting) {
 				<div class="px-6 md:px-11 pt-9 pb-4">
 					@SectionLabel("02 — PHOTOGRAPHY")
 				</div>
-				<a href="/photography" class="flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile flex items-center justify-center border border-line no-underline hover:opacity-85">
-					<span class="font-mono text-xs text-faint">[ photo — red kite in flight ]</span>
-				</a>
+				if hasPhoto {
+					<a href="/photography" class="relative flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile overflow-hidden border border-line no-underline hover:opacity-85">
+						<img src={ templ.SafeURL(photo.SmallURL) } srcset={ photo.SmallURL + " 640w, " + photo.LargeURL + " 1600w" } sizes="(min-width: 768px) 50vw, 100vw" width={ fmt.Sprint(photo.Width) } height={ fmt.Sprint(photo.Height) } alt={ photo.Title } loading="lazy" class="block w-full h-full object-cover"/>
+						<span class="absolute left-0 right-0 bottom-0 py-2.5 px-3 bg-[linear-gradient(transparent,rgba(12,12,10,.72))] font-mono text-[11.5px] text-code-bright">{ photo.Title }</span>
+					</a>
+				} else {
+					<a href="/photography" class="flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile flex items-center justify-center border border-line no-underline hover:opacity-85">
+						<span class="font-mono text-xs text-faint">[ photo — red kite in flight ]</span>
+					</a>
+				}
 				<div class="px-6 md:px-11 pt-4 pb-9 flex justify-between items-baseline gap-4">
 					<span class="text-sm text-muted">Landscapes &amp; wildlife · prints available</span>
 					<a href="/photography" class="font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85">open gallery →</a>
