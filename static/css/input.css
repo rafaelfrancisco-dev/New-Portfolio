@@ -188,3 +188,36 @@
 	background-color: var(--color-ink);
 	color: var(--color-bg);
 }
+
+/* Cross-document view transitions for ordinary anchor navigation. Entirely
+   declarative — browsers without support ignore these rules and navigate
+   exactly as before. */
+@view-transition {
+	navigation: auto;
+}
+
+/* Faster than the 250ms user-agent default. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 180ms;
+	animation-timing-function: ease;
+}
+
+/* Shared elements: the group animates the box, old/new cross-fade inside it. */
+::view-transition-group(*) {
+	animation-duration: 180ms;
+	animation-timing-function: ease;
+}
+
+/* Snapshots default to object-fit: fill, which stretches a title or photo while
+   its box resizes. Keeping their natural height reads as movement instead. */
+::view-transition-old(*),
+::view-transition-new(*) {
+	height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@view-transition {
+		navigation: none;
+	}
+}

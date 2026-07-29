@@ -17,7 +17,7 @@ templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post
 				<span class="text-muted">{ post.Category }</span>
 				<span>{ fmt.Sprintf("· %d min read", readMinutes) }</span>
 			</div>
-			<h1 class="m-0 text-4xl leading-[1.2] font-semibold tracking-[-.01em] text-pretty">{ post.Title }</h1>
+			<h1 class="m-0 text-4xl leading-[1.2] font-semibold tracking-[-.01em] text-pretty" style={ vtStyle("post", post.Slug) }>{ post.Title }</h1>
 			<p class="m-0 text-lg leading-[1.7] text-muted text-pretty">{ post.Lede }</p>
 			<div class="h-px bg-line"></div>
 			<div class="prose-article">

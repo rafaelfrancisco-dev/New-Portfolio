@@ -72,7 +72,7 @@ func Layout(settings db.SiteSetting, title string, path string, active string) t
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" href=\"/journal/feed.xml\"><script src=\"/static/js/htmx.min.js\" defer></script></head><body class=\"min-h-full bg-bg text-ink font-sans antialiased flex flex-col\"><header class=\"flex items-baseline justify-between gap-5 flex-wrap px-6 md:px-11 py-[26px] border-b border-line\"><a href=\"/\" class=\"flex items-baseline gap-3 no-underline hover:opacity-85\"><span class=\"font-mono font-semibold text-base\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" href=\"/journal/feed.xml\"><script src=\"/static/js/htmx.min.js\" defer></script></head><body class=\"min-h-full bg-bg text-ink font-sans antialiased flex flex-col\"><header class=\"flex items-baseline justify-between gap-5 flex-wrap px-6 md:px-11 py-[26px] border-b border-line\" style=\"view-transition-name: site-header\"><a href=\"/\" class=\"flex items-baseline gap-3 no-underline hover:opacity-85\"><span class=\"font-mono font-semibold text-base\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -130,7 +130,7 @@ func Layout(settings db.SiteSetting, title string, path string, active string) t
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</main><footer class=\"px-6 md:px-11 py-5 border-t border-line flex justify-between gap-4 flex-wrap font-mono text-[13px] text-faint\"><span>© 2026 ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</main><footer class=\"px-6 md:px-11 py-5 border-t border-line flex justify-between gap-4 flex-wrap font-mono text-[13px] text-faint\" style=\"view-transition-name: site-footer\"><span>© 2026 ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
