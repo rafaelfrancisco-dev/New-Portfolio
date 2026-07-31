@@ -51,7 +51,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\" style=\"view-transition-name: page-title\">Olá, I'm Rafael.</h1><p class=\"m-0 text-[17px] leading-[1.7] text-muted max-w-[60ch] text-pretty\">I'm a software developer from Lousã, near Coimbra, Portugal. I've been building native mobile apps since 2016 — currently as Mobile Tech Lead at Eneida, where I manage the mobile portfolio for Smart Grid field tools. Evenings and weekends belong to my own apps and to a camera bag that's always slightly too heavy.</p></div><div class=\"flex flex-col gap-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Olá, I'm Rafael.</h1><p class=\"m-0 text-[17px] leading-[1.7] text-muted max-w-[60ch] text-pretty\">I'm a software developer from Lousã, near Coimbra, Portugal. I've been building native mobile apps since 2016 — currently as Mobile Tech Lead at Eneida, where I manage the mobile portfolio for Smart Grid field tools. Evenings and weekends belong to my own apps and to a camera bag that's always slightly too heavy.</p></div><div class=\"flex flex-col gap-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

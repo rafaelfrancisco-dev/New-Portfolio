@@ -57,7 +57,7 @@ func LightroomPage(plugins []content.Plugin, settings db.SiteSetting) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\" style=\"view-transition-name: page-title\">Plug-ins</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Two plug-ins for Lightroom Classic on macOS. Everything runs on your Mac — no account, no upload, no API key. Free and open source.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Plug-ins</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Two plug-ins for Lightroom Classic on macOS. Everything runs on your Mac — no account, no upload, no API key. Free and open source.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
