@@ -12,7 +12,7 @@ templ LightroomPage(plugins []content.Plugin, settings db.SiteSetting) {
 	@Layout(settings, settings.DisplayName + " — Lightroom", "~/lightroom", "lightroom") {
 		<div class="px-6 md:px-11 pt-12 pb-7 flex flex-col gap-[14px] border-b border-line">
 			@SectionLabel("05 — LIGHTROOM")
-			<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]" style="view-transition-name: page-title">Plug-ins</h1>
+			<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Plug-ins</h1>
 			<p class="m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty">Two plug-ins for Lightroom Classic on macOS. Everything runs on your Mac — no account, no upload, no API key. Free and open source.</p>
 		</div>
 		for _, p := range plugins {

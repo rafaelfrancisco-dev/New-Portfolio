@@ -54,7 +54,7 @@ func SoftwarePage(projects []content.Project, settings db.SiteSetting) templ.Com
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\" style=\"view-transition-name: page-title\">Projects</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Indie apps for iOS, watchOS and Android — most born from a walk in the woods or an itch nothing on the App Store scratched.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Projects</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Indie apps for iOS, watchOS and Android — most born from a walk in the woods or an itch nothing on the App Store scratched.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

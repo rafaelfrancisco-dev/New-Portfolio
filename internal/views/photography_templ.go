@@ -57,7 +57,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"flex justify-between items-baseline gap-5 flex-wrap\"><h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\" style=\"view-transition-name: page-title\">Photography</h1>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"flex justify-between items-baseline gap-5 flex-wrap\"><h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Photography</h1>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

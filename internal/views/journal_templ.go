@@ -55,7 +55,7 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"mt-0 mb-2.5 text-[38px] font-semibold tracking-[-.01em]\" style=\"view-transition-name: page-title\">Notes from the field &amp; the desk</h1><div class=\"flex flex-col\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"mt-0 mb-2.5 text-[38px] font-semibold tracking-[-.01em]\">Notes from the field &amp; the desk</h1><div class=\"flex flex-col\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

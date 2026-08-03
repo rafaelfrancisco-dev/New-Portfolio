@@ -48,7 +48,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"px-6 md:px-11 pt-14 pb-11 flex flex-col gap-[18px] border-b border-line\"><h1 class=\"m-0 text-[42px] leading-[1.15] font-semibold tracking-[-.01em] max-w-[26ch]\" style=\"view-transition-name: page-title\">I build iOS apps and photograph the wild bits of Portugal.</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Mobile Tech Lead by day, indie developer and amateur photographer the rest of the time. Everything here is either shipped, printed, or written down.</p></div><div class=\"grid grid-cols-1 md:grid-cols-2\"><div class=\"px-6 md:px-11 py-9 border-b md:border-b-0 md:border-r border-line flex flex-col gap-4\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"px-6 md:px-11 pt-14 pb-11 flex flex-col gap-[18px] border-b border-line\"><h1 class=\"m-0 text-[42px] leading-[1.15] font-semibold tracking-[-.01em] max-w-[26ch]\">I build iOS apps and photograph the wild bits of Portugal.</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Mobile Tech Lead by day, indie developer and amateur photographer the rest of the time. Everything here is either shipped, printed, or written down.</p></div><div class=\"grid grid-cols-1 md:grid-cols-2\"><div class=\"px-6 md:px-11 py-9 border-b md:border-b-0 md:border-r border-line flex flex-col gap-4\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -190,7 +190,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"px-6 md:px-11 pt-4 pb-9 flex justify-between items-baseline gap-4\"><span class=\"text-sm text-muted\">Landscapes &amp; wildlife · prints available</span> <a href=\"/photography\" class=\"font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85\">open gallery →</a></div></div></div><div class=\"px-6 md:px-11 py-8 border-t border-line flex flex-col gap-[14px]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"px-6 md:px-11 pt-4 pb-9 flex justify-end items-baseline gap-4\"><a href=\"/photography\" class=\"font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85\">open gallery →</a></div></div></div><div class=\"px-6 md:px-11 py-8 border-t border-line flex flex-col gap-[14px]\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -210,7 +210,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				var templ_7745c5c3_Var10 templ.SafeURL
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/journal/" + p.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 51, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 50, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -223,7 +223,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(formatPostDate(p))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 87}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 51, Col: 87}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -236,7 +236,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("post", p.Slug))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 53, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(p.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 53, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -302,7 +302,7 @@ func homeProject(name string, meta string) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 63, Col: 48}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 62, Col: 48}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -315,7 +315,7 @@ func homeProject(name string, meta string) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(meta)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 64, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 63, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
