@@ -166,11 +166,11 @@ func Layout(settings db.SiteSetting, title string, path string, active string) t
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = navLink("/about", "about", active).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = navLink("/lightroom", "lightroom", active).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = navLink("/lightroom", "lightroom", active).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = navLink("/about", "about", active).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
