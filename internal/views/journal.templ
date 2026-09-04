@@ -19,7 +19,7 @@ templ JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow
 								<span>{ formatPostDate(p) }</span>
 								<span class="text-muted">{ p.Category }</span>
 							</span>
-							<span class="text-[21px] font-semibold leading-[1.3]" style={ vtStyle("post", p.Slug) }>{ p.Title }</span>
+							<span class="text-[21px] font-semibold leading-[1.3]" style={ vtPost(p) }>{ p.Title }</span>
 							<span class="text-[15px] leading-[1.6] text-muted max-w-[64ch]">{ p.Teaser }</span>
 						</a>
 					}

@@ -196,24 +196,12 @@
 	navigation: auto;
 }
 
-/* Faster than the 250ms user-agent default. */
-::view-transition-old(root),
-::view-transition-new(root) {
-	animation-duration: 180ms;
-	animation-timing-function: ease;
-}
-
-/* Shared elements: the group animates the box, old/new cross-fade inside it. */
+/* Faster than the 250ms user-agent default. The group animates the box and the
+   old/new snapshots cross-fade inside it; both inherit their duration from the
+   group, so this is the only timing knob — including for the root fade. */
 ::view-transition-group(*) {
 	animation-duration: 180ms;
 	animation-timing-function: ease;
-}
-
-/* Snapshots default to object-fit: fill, which stretches a title or photo while
-   its box resizes. Keeping their natural height reads as movement instead. */
-::view-transition-old(*),
-::view-transition-new(*) {
-	height: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

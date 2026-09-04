@@ -5,5 +5,5 @@ package static
 
 import "embed"
 
-//go:embed css/app.css js/htmx.min.js fonts
+//go:embed css/app.css js/htmx.min.js fonts favicon.svg
 var FS embed.FS

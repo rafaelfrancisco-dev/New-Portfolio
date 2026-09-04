@@ -94,9 +94,9 @@ func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post,
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("post", post.Slug))
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtPost(post))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 20, Col: 120}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 20, Col: 106}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -109,7 +109,7 @@ func ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post,
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(post.Title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 20, Col: 135}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/article.templ`, Line: 20, Col: 121}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {

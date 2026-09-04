@@ -87,7 +87,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português — native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English — C1</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español — B1</span></div></div></div><aside class=\"flex flex-col\"><div class=\"aspect-square bg-tile border-b border-line flex items-center justify-center\"><span class=\"font-mono text-xs text-faint\">[ portrait — Rafael ]</span></div><div class=\"py-[30px] px-6 md:px-[34px] flex flex-col gap-[18px]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português — native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English — C2</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español — B1</span></div></div></div><aside class=\"flex flex-col\"><div class=\"py-12 px-6 md:px-[34px] flex flex-col gap-[18px]\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -102,7 +102,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			var templ_7745c5c3_Var3 templ.SafeURL
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("mailto:" + settings.ContactEmail))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 38, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 35, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -115,7 +115,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(settings.ContactEmail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 38, Col: 178}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 35, Col: 178}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -133,7 +133,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var5 templ.SafeURL
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(settings.GithubUrl))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 41, Col: 50}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 38, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -146,7 +146,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(settings.GithubUrl)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 41, Col: 124}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 38, Col: 124}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -165,7 +165,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var7 templ.SafeURL
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(settings.LinkedinUrl))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 44, Col: 52}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 41, Col: 52}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -178,7 +178,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(settings.LinkedinUrl)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 44, Col: 128}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 41, Col: 128}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -197,7 +197,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var9 templ.SafeURL
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(settings.InstagramUrl))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 47, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 44, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -210,7 +210,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(settings.InstagramUrl)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 47, Col: 130}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 44, Col: 130}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -263,7 +263,7 @@ func experienceRow(years string, role string, detail string) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(years)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 59, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 56, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -276,7 +276,7 @@ func experienceRow(years string, role string, detail string) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(role)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 60, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 57, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -289,7 +289,7 @@ func experienceRow(years string, role string, detail string) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(detail)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 60, Col: 77}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/about.templ`, Line: 57, Col: 77}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
