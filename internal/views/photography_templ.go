@@ -119,9 +119,9 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var4 string
-					templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("photo", ph.ID))
+					templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtPhoto(ph))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 38, Col: 74}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 38, Col: 62}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -134,7 +134,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.ResolveAttributeValue(photoDetailURL(ph.ID, gallery.Filter))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 38, Col: 123}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/photography.templ`, Line: 38, Col: 111}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 					if templ_7745c5c3_Err != nil {

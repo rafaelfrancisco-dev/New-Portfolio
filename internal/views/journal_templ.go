@@ -104,9 +104,9 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("post", p.Slug))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtPost(p))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 22, Col: 92}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 22, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -119,7 +119,7 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(p.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 22, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 22, Col: 90}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {

@@ -66,18 +66,16 @@ templ pluginBlock(p content.Plugin) {
 // menu-item plug-ins like Vision Keywords — so both are drawn here instead, as
 // an outline plus an inner circle, to read as a set.
 templ pluginMark(icon string) {
-	switch icon {
-		case "icloud":
-			<svg class="w-6 h-6 shrink-0 text-warm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+	<svg class="w-6 h-6 shrink-0 text-warm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+		switch icon {
+			case "icloud":
 				<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
 				<circle cx="9.5" cy="13.5" r="3"></circle>
-			</svg>
-		case "vision":
-			<svg class="w-6 h-6 shrink-0 text-warm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			case "vision":
 				<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
 				<circle cx="12" cy="12" r="3"></circle>
-			</svg>
-	}
+		}
+	</svg>
 }
 
 // downloadLink names the release asset rather than showing a generic button, so

@@ -94,9 +94,9 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("photo", photo.ID))
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtPhoto(photo))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 32, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 32, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -190,7 +190,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"px-6 md:px-11 pt-4 pb-9 flex justify-end items-baseline gap-4\"><a href=\"/photography\" class=\"font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85\">open gallery →</a></div></div></div><div class=\"px-6 md:px-11 py-8 border-t border-line flex flex-col gap-[14px]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"px-6 md:px-11 pt-4 pb-9 text-right\"><a href=\"/photography\" class=\"font-mono font-semibold text-[13px] text-ink no-underline hover:opacity-85\">open gallery →</a></div></div></div><div class=\"px-6 md:px-11 py-8 border-t border-line flex flex-col gap-[14px]\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -234,9 +234,9 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var12 string
-				templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtStyle("post", p.Slug))
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(vtPost(p))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 79}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -249,7 +249,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(p.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/home.templ`, Line: 52, Col: 77}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
