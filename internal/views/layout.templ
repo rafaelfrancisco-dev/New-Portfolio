@@ -12,6 +12,13 @@ templ Layout(settings db.SiteSetting, title string, path string, active string) 
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title }</title>
 			<meta name="description" content={ settings.SiteDescription }/>
+			<meta property="og:type" content="website"/>
+			<meta property="og:title" content={ title }/>
+			<meta property="og:description" content={ settings.SiteDescription }/>
+			<meta name="twitter:card" content="summary"/>
+			<meta name="twitter:title" content={ title }/>
+			<meta name="twitter:description" content={ settings.SiteDescription }/>
+			<link rel="icon" type="image/svg+xml" href="/static/favicon.svg"/>
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			<link rel="alternate" type="application/rss+xml" title={ settings.DisplayName + " — Journal" } href="/journal/feed.xml"/>
 			<script src="/static/js/htmx.min.js" defer></script>
