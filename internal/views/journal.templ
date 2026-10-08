@@ -13,15 +13,19 @@ templ JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow
 				@SectionLabel("03 — JOURNAL")
 				<h1 class="mt-0 mb-2.5 text-[38px] font-semibold tracking-[-.01em]">Notes from the field &amp; the desk</h1>
 				<div class="flex flex-col">
-					for _, p := range posts {
-						<a href={ templ.SafeURL("/journal/" + p.Slug) } class="no-underline text-inherit hover:opacity-85 flex flex-col gap-2 py-6 border-t border-line">
-							<span class="flex gap-[14px] font-mono text-[12.5px] text-faint">
-								<span>{ formatPostDate(p) }</span>
-								<span class="text-muted">{ p.Category }</span>
-							</span>
-							<span class="text-[21px] font-semibold leading-[1.3]" style={ vtPost(p) }>{ p.Title }</span>
-							<span class="text-[15px] leading-[1.6] text-muted max-w-[64ch]">{ p.Teaser }</span>
-						</a>
+					if len(posts) == 0 {
+						<p class="text-muted text-[15px] py-6 border-t border-line">No journal entries yet — check back soon.</p>
+					} else {
+						for _, p := range posts {
+							<a href={ templ.SafeURL("/journal/" + p.Slug) } class="no-underline text-inherit hover:opacity-85 flex flex-col gap-2 py-6 border-t border-line">
+								<span class="flex gap-[14px] font-mono text-[12.5px] text-faint">
+									<span>{ formatPostDate(p) }</span>
+									<span class="text-muted">{ p.Category }</span>
+								</span>
+								<span class="text-[21px] font-semibold leading-[1.3]" style={ vtPost(p) }>{ p.Title }</span>
+								<span class="text-[15px] leading-[1.6] text-muted max-w-[64ch]">{ p.Teaser }</span>
+							</a>
+						}
 					}
 				</div>
 			</div>

@@ -81,7 +81,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><p class=\"m-0 text-[15px] text-muted max-w-[62ch]\">Central Portugal, mostly on foot. Selected work is available as prints — <a href=\"/about\" class=\"text-ink hover:opacity-85\">get in touch</a>.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><p class=\"m-0 text-[15px] text-muted max-w-[62ch]\">A random assortment of pictures</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
