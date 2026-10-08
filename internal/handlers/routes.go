@@ -34,6 +34,7 @@ func Register(s *fuego.Server, rs Resource) {
 	fuego.Get(s, "/photography", rs.photographyPage,
 		option.Summary("Photography gallery"),
 		option.Query("filter", "Gallery filter: all or an opaque Flickr album ID"),
+		option.Query("page", "Page number, 1-indexed"),
 		option.Tags("pages"),
 	)
 	fuego.Get(s, "/journal", rs.journalPage,

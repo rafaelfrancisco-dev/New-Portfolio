@@ -13,6 +13,9 @@ import (
 
 const CacheLifetime = 24 * time.Hour
 
+// PhotosPerPage caps how many photos the gallery page renders at once.
+const PhotosPerPage = 60
+
 type Store struct {
 	DB     *sql.DB
 	Cipher *Cipher
@@ -34,11 +37,15 @@ type Status struct {
 	Fresh                    bool
 }
 type Gallery struct {
-	Albums    []Album
-	Photos    []Photo
-	Filter    string
-	Available bool
-	SyncedAt  time.Time
+	Albums      []Album
+	Photos      []Photo
+	Filter      string
+	Available   bool
+	SyncedAt    time.Time
+	Page        int
+	PageSize    int
+	TotalPages  int
+	TotalPhotos int
 }
 
 func (s Store) RecordFailure(ctx context.Context, now time.Time, cause error) {
@@ -227,7 +234,11 @@ func scanPhoto(rows interface{ Scan(...any) error }) (Photo, error) {
 	return p, err
 }
 
-func (s Store) Gallery(ctx context.Context, filter string, now time.Time) (Gallery, error) {
+// loadGallery returns every photo matching filter, ordered newest-taken
+// first, with no pagination applied. Store.Photo and Store.RandomPhoto use
+// this directly so prev/next wraps and random picks draw from the whole
+// filtered set rather than a single page.
+func (s Store) loadGallery(ctx context.Context, filter string, now time.Time) (Gallery, error) {
 	var result Gallery
 	var snapshot string
 	var completed time.Time
@@ -270,7 +281,7 @@ func (s Store) Gallery(ctx context.Context, filter string, now time.Time) (Galle
 		query += ` AND ap.album_id=?`
 		args = append(args, filter)
 	}
-	query += ` GROUP BY p.photo_id ORDER BY MIN((SELECT position FROM flickr_albums a WHERE a.snapshot_id=ap.snapshot_id AND a.album_id=ap.album_id)), MIN(ap.position)`
+	query += ` GROUP BY p.photo_id ORDER BY p.taken_at DESC, p.photo_id DESC`
 	photoRows, err := s.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return result, err
@@ -288,8 +299,40 @@ func (s Store) Gallery(ctx context.Context, filter string, now time.Time) (Galle
 	return result, photoRows.Err()
 }
 
+// Gallery returns one page of photos matching filter, newest-taken first.
+// page is 1-indexed and clamped into [1, TotalPages].
+func (s Store) Gallery(ctx context.Context, filter string, now time.Time, page int) (Gallery, error) {
+	result, err := s.loadGallery(ctx, filter, now)
+	if err != nil {
+		return result, err
+	}
+	result.PageSize = PhotosPerPage
+	result.TotalPhotos = len(result.Photos)
+	result.TotalPages = (result.TotalPhotos + PhotosPerPage - 1) / PhotosPerPage
+	if result.TotalPages < 1 {
+		result.TotalPages = 1
+	}
+	if page < 1 {
+		page = 1
+	}
+	if page > result.TotalPages {
+		page = result.TotalPages
+	}
+	result.Page = page
+	start := (page - 1) * PhotosPerPage
+	end := start + PhotosPerPage
+	if start > len(result.Photos) {
+		start = len(result.Photos)
+	}
+	if end > len(result.Photos) {
+		end = len(result.Photos)
+	}
+	result.Photos = result.Photos[start:end]
+	return result, nil
+}
+
 func (s Store) Photo(ctx context.Context, id, filter string, now time.Time) (Photo, string, string, string, error) {
-	gallery, err := s.Gallery(ctx, filter, now)
+	gallery, err := s.loadGallery(ctx, filter, now)
 	if err != nil {
 		return Photo{}, "", "", "", err
 	}
@@ -308,7 +351,7 @@ func (s Store) Photo(ctx context.Context, id, filter string, now time.Time) (Pho
 // grid. The bool is false when Flickr isn't connected, hasn't synced
 // recently enough, or has no photos.
 func (s Store) RandomPhoto(ctx context.Context, now time.Time) (Photo, bool, error) {
-	gallery, err := s.Gallery(ctx, "all", now)
+	gallery, err := s.loadGallery(ctx, "all", now)
 	if err != nil {
 		return Photo{}, false, err
 	}

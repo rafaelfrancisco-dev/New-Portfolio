@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -94,7 +95,11 @@ func (rs Resource) photographyPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if rs.Flickr == nil {
 		return views.PhotographyPage(flickr.Gallery{}, settings), nil
 	}
-	gallery, err := rs.Flickr.Store.Gallery(c.Context(), c.QueryParam("filter"), time.Now().UTC())
+	page, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	gallery, err := rs.Flickr.Store.Gallery(c.Context(), c.QueryParam("filter"), time.Now().UTC(), page)
 	if err != nil {
 		return nil, errors.Wrap(err, "load Flickr gallery")
 	}
