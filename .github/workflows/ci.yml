@@ -76,4 +76,5 @@ jobs:
         run: sudo /usr/local/sbin/deploy-new-portfolio "${{ github.sha }}" "${{ steps.build.outputs.digest }}"
 
       - name: Verify health endpoint
-        run: curl --fail --silent --show-error --retry 12 --retry-delay 2 --retry-connrefused -H "Host: imaginarymakings.dev" http://127.0.0.1:8081/healthz
+        run: |
+          curl --fail --silent --show-error --retry 12 --retry-delay 2 --retry-connrefused -H "Host: imaginarymakings.dev" http://127.0.0.1:8081/healthz
