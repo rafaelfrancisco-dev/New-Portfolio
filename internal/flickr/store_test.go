@@ -3,6 +3,7 @@ package flickr_test
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -129,18 +130,18 @@ func TestGalleryPagination(t *testing.T) {
 	if oldest.ID != "p00" || prev != "p01" || next != fmt.Sprintf("p%02d", total-1) {
 		t.Fatalf("oldest photo navigation = %+v prev=%q next=%q", oldest, prev, next)
 	}
-	seenBeyondPage1 := false
-	for i := 0; i < 100; i++ {
-		random, ok, err := store.RandomPhoto(t.Context(), now)
-		if err != nil || !ok {
-			t.Fatalf("random photo = %+v, %v", random, err)
-		}
-		if random.TakenAt < fmt.Sprintf("2026-01-%02d 10:00:00", flickr.PhotosPerPage+1) {
-			seenBeyondPage1 = true
-		}
+	// The featured selection is rolled once per snapshot and cached, not
+	// re-randomized per request, so it must be a real photo from the
+	// current snapshot and stable across repeated calls.
+	first, ok, err := store.RandomPhoto(t.Context(), now)
+	if err != nil || !ok || !strings.HasPrefix(first.ID, "p") {
+		t.Fatalf("random photo = %+v, ok=%v, %v", first, ok, err)
 	}
-	if !seenBeyondPage1 {
-		t.Fatal("RandomPhoto never picked a photo outside of page 1")
+	for i := 0; i < 5; i++ {
+		again, ok, err := store.RandomPhoto(t.Context(), now)
+		if err != nil || !ok || again.ID != first.ID {
+			t.Fatalf("random photo was not cached: got %+v, want %q", again, first.ID)
+		}
 	}
 }
 
