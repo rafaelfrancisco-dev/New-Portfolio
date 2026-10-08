@@ -155,6 +155,13 @@ func (rs Resource) adminAuthMiddleware(next http.Handler) http.Handler {
 }
 
 func sameOrigin(r *http.Request) bool {
+	// Fetch metadata is the modern, reliable signal: browsers set it from
+	// their own navigation state and pages cannot override it. It also
+	// sidesteps a WebKit quirk where Safari sends Origin: null on some
+	// same-origin top-level form-submission navigations.
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" {
+		return site == "same-origin"
+	}
 	source := r.Header.Get("Origin")
 	if source == "" {
 		source = r.Header.Get("Referer")

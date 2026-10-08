@@ -178,6 +178,36 @@ func TestAdminSecureCookieAndExpiredSession(t *testing.T) {
 	}
 }
 
+// Reproduces a live bug: Safari sends Origin: null on a same-origin login
+// form submission (a top-level navigation), which must not be treated as
+// cross-origin when Sec-Fetch-Site says otherwise.
+func TestAdminLoginAcceptsSafariNullOrigin(t *testing.T) {
+	server := newTestServer(t)
+	getLogin := server.do(t, httptest.NewRequest(http.MethodGet, "http://example.com/admin/login", nil))
+	match := csrfInput.FindStringSubmatch(getLogin.Body.String())
+	if len(match) != 2 {
+		t.Fatalf("login CSRF token not found: %s", getLogin.Body.String())
+	}
+	var loginCookie *http.Cookie
+	for _, cookie := range getLogin.Result().Cookies() {
+		if cookie.Name == "portfolio_login_csrf" {
+			loginCookie = cookie
+		}
+	}
+	if loginCookie == nil {
+		t.Fatal("login CSRF cookie missing")
+	}
+	form := url.Values{"username": {"admin"}, "password": {"correct horse battery staple"}, "csrf_token": {match[1]}}
+	request := httptest.NewRequest(http.MethodPost, "http://example.com/admin/login", strings.NewReader(form.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Origin", "null")
+	request.Header.Set("Sec-Fetch-Site", "same-origin")
+	request.AddCookie(loginCookie)
+	if got := server.do(t, request).Code; got != http.StatusSeeOther {
+		t.Fatalf("login with Origin: null + Sec-Fetch-Site: same-origin = %d, want 303", got)
+	}
+}
+
 func TestAdminLoginErrorsAndThrottle(t *testing.T) {
 	server := newTestServer(t)
 	for attempt := 0; attempt < 6; attempt++ {
@@ -394,5 +424,36 @@ func TestAdminCrossOriginRejected(t *testing.T) {
 	request.AddCookie(client.session)
 	if got := server.do(t, request).Code; got != http.StatusForbidden {
 		t.Fatalf("cross-origin status = %d, want 403", got)
+	}
+}
+
+// Safari sends Origin: null (and sometimes no Origin/Referer at all) on some
+// same-origin top-level form-submission navigations, so Sec-Fetch-Site must
+// be trusted over Origin/Referer when the browser sends it.
+func TestAdminSameOriginViaSecFetchSite(t *testing.T) {
+	server := newTestServer(t)
+	client := loginAdmin(t, server)
+	form := url.Values{"csrf_token": {client.csrf}}
+	request := httptest.NewRequest(http.MethodPost, "http://example.com/admin/logout", strings.NewReader(form.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Origin", "null")
+	request.Header.Set("Sec-Fetch-Site", "same-origin")
+	request.AddCookie(client.session)
+	if got := server.do(t, request).Code; got != http.StatusSeeOther {
+		t.Fatalf("same-origin (Sec-Fetch-Site) status = %d, want 303", got)
+	}
+}
+
+func TestAdminCrossSiteRejectedEvenWithMatchingOrigin(t *testing.T) {
+	server := newTestServer(t)
+	client := loginAdmin(t, server)
+	form := url.Values{"csrf_token": {client.csrf}}
+	request := httptest.NewRequest(http.MethodPost, "http://example.com/admin/logout", strings.NewReader(form.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Set("Origin", "http://example.com")
+	request.Header.Set("Sec-Fetch-Site", "cross-site")
+	request.AddCookie(client.session)
+	if got := server.do(t, request).Code; got != http.StatusForbidden {
+		t.Fatalf("cross-site (Sec-Fetch-Site) status = %d, want 403", got)
 	}
 }
