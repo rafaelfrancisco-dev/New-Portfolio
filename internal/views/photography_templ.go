@@ -459,7 +459,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div onclick=\"document.getElementById('photo-modal').innerHTML=''\" class=\"fixed inset-0 z-[60] bg-[rgba(9,9,8,.93)] flex items-center justify-center p-3 md:p-7\"><div onclick=\"event.stopPropagation()\" class=\"w-[min(1200px,100%)] max-h-full overflow-auto grid grid-cols-1 md:grid-cols-[1fr_340px] bg-bg border border-line rounded-lg\"><div class=\"relative bg-panel min-h-[240px] w-fit max-w-full justify-self-center flex items-center justify-center\"><img src=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<div onclick=\"document.getElementById('photo-modal').innerHTML=''\" class=\"fixed inset-0 z-[60] bg-[rgba(9,9,8,.93)] flex items-center justify-center p-3 md:p-7\"><div onclick=\"event.stopPropagation()\" class=\"w-full md:w-auto md:max-w-[1200px] max-h-full overflow-auto flex flex-col md:flex-row bg-bg border border-line rounded-lg\"><div class=\"relative bg-panel min-h-[240px] flex items-center justify-center\"><img src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -511,7 +511,7 @@ func PhotoDetail(ph flickr.Photo, prev string, next string, filter string) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" class=\"block max-w-full max-h-[82vh] w-auto h-auto\"></div><aside class=\"pt-6 px-6 pb-[26px] flex flex-col gap-5 border-l border-line\"><div class=\"flex justify-between items-baseline gap-3\"><span class=\"font-mono font-medium text-xs tracking-[.1em] text-faint\">PHOTO</span><button onclick=\"document.getElementById('photo-modal').innerHTML=''\" class=\"font-mono font-semibold text-xs text-muted hover:opacity-85\">✕ esc</button></div><div class=\"flex flex-col gap-2\"><h2 class=\"m-0 text-xl font-semibold leading-[1.3]\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" class=\"block max-w-full max-h-[82vh] w-auto h-auto\"></div><aside class=\"pt-6 px-6 pb-[26px] flex flex-col gap-5 border-l border-line md:w-[340px] md:shrink-0\"><div class=\"flex justify-between items-baseline gap-3\"><span class=\"font-mono font-medium text-xs tracking-[.1em] text-faint\">PHOTO</span><button onclick=\"document.getElementById('photo-modal').innerHTML=''\" class=\"font-mono font-semibold text-xs text-muted hover:opacity-85\">✕ esc</button></div><div class=\"flex flex-col gap-2\"><h2 class=\"m-0 text-xl font-semibold leading-[1.3]\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
