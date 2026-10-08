@@ -30,3 +30,9 @@ RestrictSUIDSGID=true
 
 [Install]
 WantedBy=multi-user.target
+
+# Portfolio resource budget; validate against disposable workloads before activation.
+[Service]
+MemoryHigh=384M
+MemoryMax=512M
+TasksMax=128

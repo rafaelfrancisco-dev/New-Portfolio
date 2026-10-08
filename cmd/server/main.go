@@ -4,8 +4,11 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -34,6 +37,27 @@ func run() error {
 	if adminPasswordHash == "" {
 		return errors.New("ADMIN_PASSWORD_HASH is required; generate one with go run ./cmd/adminhash")
 	}
+	publicAddr := envOr("ADDR", "127.0.0.1:8081")
+	adminAddr := envOr("ADMIN_ADDR", "127.0.0.1:8082")
+	development := os.Getenv("APP_ENV") == "development"
+	publicURL, err := handlers.ValidateOrigin(os.Getenv("PUBLIC_BASE_URL"), publicAddr, development)
+	if err != nil {
+		return errors.Wrap(err, "public origin")
+	}
+	adminURL, err := handlers.ValidateOrigin(os.Getenv("ADMIN_BASE_URL"), adminAddr, development)
+	if err != nil {
+		return errors.Wrap(err, "admin origin")
+	}
+	publicListener, err := net.Listen("tcp", publicAddr)
+	if err != nil {
+		return err
+	}
+	defer publicListener.Close()
+	adminListener, err := net.Listen("tcp", adminAddr)
+	if err != nil {
+		return err
+	}
+	defer adminListener.Close()
 	uploadDir := envOr("UPLOAD_DIR", "uploads")
 	if err := os.MkdirAll(uploadDir, 0o750); err != nil {
 		return errors.Wrapf(err, "create upload directory %q", uploadDir)
@@ -60,7 +84,7 @@ func run() error {
 		Store: flickr.Store{DB: appDB, Cipher: flickrCipher},
 		Client: flickr.NewClient(flickr.Config{
 			APIKey: os.Getenv("FLICKR_API_KEY"), APISecret: os.Getenv("FLICKR_API_SECRET"),
-			PublicBaseURL: os.Getenv("PUBLIC_BASE_URL"),
+			PublicBaseURL: adminURL.String(),
 		}),
 	}
 
@@ -85,33 +109,76 @@ func run() error {
 	}
 	defer dbos.Shutdown(dbosCtx, 5*time.Second)
 
-	s := fuego.NewServer(
-		fuego.WithAddr(envOr("ADDR", "localhost:8080")),
-	)
-	handlers.Register(s, handlers.Resource{
-		Queries:           queries,
-		DBOS:              dbosCtx,
-		AppDB:             appDB,
-		DBOSDB:            dbosDB,
-		AdminUsername:     envOr("ADMIN_USERNAME", "admin"),
-		AdminPasswordHash: adminPasswordHash,
-		UploadDir:         uploadDir,
-		Flickr:            flickrService,
-	})
-
-	// Serve until the context is cancelled by SIGINT/SIGTERM, then drain
-	// in-flight requests before the deferred DBOS/database shutdowns run.
-	errCh := make(chan error, 1)
-	go func() { errCh <- s.Run() }()
-	select {
-	case err := <-errCh:
-		return errors.Wrap(err, "run server")
-	case <-ctx.Done():
-		slog.Info("shutting down")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		return errors.Wrap(s.Shutdown(shutdownCtx), "shutdown server")
+	publicDB, err := db.ConnectReadOnly(envOr("APP_DB", "app.db"))
+	if err != nil {
+		return err
 	}
+	defer publicDB.Close()
+	resource := handlers.Resource{
+		Queries: queries, DBOS: dbosCtx, AppDB: appDB, DBOSDB: dbosDB,
+		AdminUsername: envOr("ADMIN_USERNAME", "admin"), AdminPasswordHash: adminPasswordHash,
+		UploadDir: uploadDir, Flickr: flickrService, PublicBaseURL: publicURL.String(), AdminBaseURL: adminURL.String(),
+	}
+	newServer := func() *fuego.Server {
+		return fuego.NewServer(fuego.WithErrorSerializer(handlers.SafeError), fuego.WithEngineOptions(fuego.WithErrorHandler(func(_ context.Context, err error) error { return err })))
+	}
+	private := newServer()
+	handlers.RegisterAdmin(private, resource)
+	public := newServer()
+	publicResource := resource
+	publicResource.Queries = db.New(publicDB)
+	publicResource.AppDB = publicDB
+	publicResource.Flickr = &flickr.Service{Store: flickr.Store{DB: publicDB}}
+	handlers.RegisterPublic(public, publicResource)
+	servers := []*http.Server{
+		{Handler: handlers.Boundary(public.Mux, publicURL, publicURL.String(), false), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10},
+		{Handler: handlers.Boundary(private.Mux, adminURL, publicURL.String(), true), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 120 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10},
+	}
+	errCh := make(chan error, 2)
+	go func() { errCh <- servers[0].Serve(publicListener) }()
+	go func() { errCh <- servers[1].Serve(adminListener) }()
+	maintenanceCtx, maintenanceCancel := context.WithCancel(ctx)
+	var maintenance sync.WaitGroup
+	maintenance.Add(1)
+	go func() {
+		defer maintenance.Done()
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			if err := db.PruneSecurity(maintenanceCtx, appDB); err != nil && maintenanceCtx.Err() == nil {
+				slog.Error("security cleanup failed")
+			}
+			select {
+			case <-maintenanceCtx.Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	var serveErr error
+	select {
+	case serveErr = <-errCh:
+	case <-ctx.Done():
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var drain sync.WaitGroup
+	for _, server := range servers {
+		drain.Add(1)
+		go func(server *http.Server) {
+			defer drain.Done()
+			if err := server.Shutdown(shutdownCtx); err != nil {
+				_ = server.Close()
+			}
+		}(server)
+	}
+	drain.Wait()
+	maintenanceCancel()
+	maintenance.Wait()
+	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+		return serveErr
+	}
+	return nil
 }
 
 func envOr(key, fallback string) string {

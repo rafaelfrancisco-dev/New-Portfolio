@@ -45,7 +45,9 @@ templ AdminLayout(title string, active string, csrfToken string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } — Admin</title>
 			<link rel="stylesheet" href="/static/css/app.css"/>
-			<script src="/static/js/htmx.min.js" defer></script>
+			<meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false}'/>
+ <script src="/static/js/htmx.min.js" defer></script>
+ <script src="/static/js/admin.js" defer></script>
 		</head>
 		<body class="min-h-full bg-bg text-ink font-sans antialiased">
 			<header class="px-5 md:px-8 py-4 border-b border-line flex items-center justify-between gap-4 flex-wrap">
@@ -56,9 +58,10 @@ templ AdminLayout(title string, active string, csrfToken string) {
 					@adminNav("/admin/media", "media", active)
 					@adminNav("/admin/settings", "settings", active)
 					@adminNav("/admin/flickr", "flickr", active)
-					<a href="/" class="text-muted no-underline">view site ↗</a>
+					<a href={ templ.SafeURL(publicOrigin(ctx)) } class="text-muted no-underline">view site ↗</a>
 				</nav>
-				<form method="post" action="/admin/logout">
+				<form method="post" action="/admin/revoke-all"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="text-muted">sign out all sessions</button></form>
+ <form method="post" action="/admin/logout">
 					<input type="hidden" name="csrf_token" value={ csrfToken }/>
 					<button class="border border-line-strong rounded px-3 py-1.5 bg-transparent text-muted font-mono text-xs cursor-pointer">logout</button>
 				</form>
@@ -88,7 +91,7 @@ templ AdminFlickrPage(connected bool, username string, lastAttempt time.Time, la
 				if lastError != "" {
 					<div class="border border-warm text-warm rounded px-3 py-2 text-sm">{ lastError }</div>
 				}
-				<div class="flex flex-wrap gap-3"><form method="post" action="/admin/flickr/sync"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="admin-button bg-ink text-bg">sync now</button></form><form method="post" action="/admin/flickr/disconnect" onsubmit="return confirm('Disconnect Flickr and remove the cached gallery?')"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="border border-warm text-warm rounded px-4 py-2 bg-transparent font-mono text-sm cursor-pointer">disconnect</button></form></div>
+				<div class="flex flex-wrap gap-3"><form method="post" action="/admin/flickr/sync"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="admin-button bg-ink text-bg">sync now</button></form><form method="post" action="/admin/flickr/disconnect" data-confirm="Disconnect Flickr and remove the cached gallery?"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="border border-warm text-warm rounded px-4 py-2 bg-transparent font-mono text-sm cursor-pointer">disconnect</button></form></div>
 			} else {
 				<p class="m-0 text-muted">Connect with read-only permission. Only photos that Flickr confirms are public will be cached and displayed.</p>
 				<form method="post" action="/admin/flickr/connect"><input type="hidden" name="csrf_token" value={ csrfToken }/><button class="admin-button bg-ink text-bg">connect Flickr</button></form>
@@ -229,31 +232,13 @@ templ AdminPostEditorPage(form AdminPostForm, previewHTML string, media []db.Lis
 			</div>
 		</form>
 		if form.ID != 0 {
-			<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/delete", form.ID)) } class="mt-8 pt-5 border-t border-line" onsubmit="return confirm('Permanently delete this post?')">
+			<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/delete", form.ID)) } class="mt-8 pt-5 border-t border-line" data-confirm="Permanently delete this post?">
 				<input type="hidden" name="csrf_token" value={ csrfToken }/>
 				<input type="hidden" name="updated_at" value={ form.UpdatedAt }/>
 				<button class="border border-warm text-warm rounded px-4 py-2 bg-transparent font-mono text-sm cursor-pointer">delete permanently</button>
 			</form>
 		}
-		<script>
-			(() => {
-				const form = document.getElementById("post-editor");
-				const body = document.getElementById("body_md");
-				let dirty = false;
-				form.addEventListener("input", () => dirty = true);
-				form.addEventListener("submit", () => dirty = false);
-				document.querySelectorAll(".media-insert").forEach((button) => button.addEventListener("click", () => {
-					const start = body.selectionStart;
-					body.setRangeText(button.dataset.markdown, start, body.selectionEnd, "end");
-					body.dispatchEvent(new Event("input", { bubbles: true }));
-				}));
-				window.addEventListener("beforeunload", (event) => {
-					if (!dirty) return;
-					event.preventDefault();
-					event.returnValue = "";
-				});
-			})();
-		</script>
+		
 	}
 }
 
@@ -287,7 +272,7 @@ templ AdminMediaPage(items []db.ListMediaRow, csrfToken string, message string) 
 					if item.InUse {
 						<span class="font-mono text-xs text-muted">in use</span>
 					} else {
-						<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/media/%d/delete", item.ID)) } onsubmit="return confirm('Delete this file?')">
+						<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/media/%d/delete", item.ID)) } data-confirm="Delete this file?">
 							<input type="hidden" name="csrf_token" value={ csrfToken }/>
 							<button class="border border-warm text-warm rounded px-3 py-2 bg-transparent font-mono text-xs cursor-pointer">delete</button>
 						</form>

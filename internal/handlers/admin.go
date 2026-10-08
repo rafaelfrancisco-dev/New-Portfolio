@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -8,8 +9,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	_ "golang.org/x/image/webp"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log/slog"
+	"mime"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -65,14 +72,14 @@ func hashToken(token string) string {
 }
 
 func requestIsSecure(r *http.Request) bool {
-	return r.TLS != nil || strings.EqualFold(strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-Proto"), ",")[0]), "https")
+	return r.TLS != nil || r.Context().Value(secureOriginKey{}) == true
 }
 
 func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     adminSessionCookie,
+		Name:     sessionCookieName(r),
 		Value:    token,
-		Path:     "/admin",
+		Path:     "/",
 		Expires:  expires,
 		MaxAge:   int(time.Until(expires).Seconds()),
 		HttpOnly: true,
@@ -83,8 +90,8 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 
 func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     adminSessionCookie,
-		Path:     "/admin",
+		Name:     sessionCookieName(r),
+		Path:     "/",
 		MaxAge:   -1,
 		Expires:  time.Unix(1, 0),
 		HttpOnly: true,
@@ -95,7 +102,7 @@ func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 
 func (rs Resource) adminAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(adminSessionCookie)
+		cookie, err := r.Cookie(sessionCookieName(r))
 		if err != nil || cookie.Value == "" {
 			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 			return
@@ -111,7 +118,7 @@ func (rs Resource) adminAuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "admin session unavailable", http.StatusInternalServerError)
 			return
 		}
-		if !session.ExpiresAt.After(time.Now().UTC()) {
+		if !session.ExpiresAt.After(time.Now().UTC()) || !rs.validSession(r.Context(), tokenHash) {
 			_ = rs.Queries.DeleteAdminSession(r.Context(), tokenHash)
 			clearSessionCookie(w, r)
 			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
@@ -172,8 +179,8 @@ func adminSession(r *http.Request) requestAdminSession {
 }
 
 func (rs Resource) adminLoginPage(w http.ResponseWriter, r *http.Request) {
-	if cookie, err := r.Cookie(adminSessionCookie); err == nil {
-		if session, err := rs.Queries.GetAdminSession(r.Context(), hashToken(cookie.Value)); err == nil && session.ExpiresAt.After(time.Now().UTC()) {
+	if cookie, err := r.Cookie(sessionCookieName(r)); err == nil {
+		if session, err := rs.Queries.GetAdminSession(r.Context(), hashToken(cookie.Value)); err == nil && session.ExpiresAt.After(time.Now().UTC()) && rs.validSession(r.Context(), hashToken(cookie.Value)) {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return
 		}
@@ -196,6 +203,22 @@ func (rs Resource) adminLoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rs Resource) adminLogin(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || mediaType != "application/x-www-form-urlencoded" {
+		http.Error(w, "unsupported content type", 415)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		var large *http.MaxBytesError
+		if errors.As(err, &large) {
+			http.Error(w, "request too large", 413)
+		} else {
+			http.Error(w, "invalid form", 400)
+		}
+		return
+	}
+
 	if !sameOrigin(r) {
 		http.Error(w, "cross-origin request rejected", http.StatusForbidden)
 		return
@@ -205,30 +228,37 @@ func (rs Resource) adminLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid CSRF token", http.StatusForbidden)
 		return
 	}
-	ip := clientIP(r)
-	cutoff := time.Now().UTC().Add(-15 * time.Minute)
-	_ = rs.Queries.DeleteOldLoginAttempts(r.Context(), cutoff.Format("2006-01-02 15:04:05"))
-	attempts, err := rs.Queries.CountRecentLoginAttempts(r.Context(), db.CountRecentLoginAttemptsParams{
-		IpAddress: ip, Cutoff: cutoff.Format("2006-01-02 15:04:05"),
-	})
-	if err != nil {
-		http.Error(w, "login unavailable", http.StatusInternalServerError)
+	if len(r.PostForm.Get("username")) > 128 || len(r.PostForm.Get("password")) > 1024 {
+		http.Error(w, "invalid credentials", http.StatusBadRequest)
 		return
 	}
-	if attempts >= 5 {
-		w.WriteHeader(http.StatusTooManyRequests)
-		rs.render(w, r, views.AdminLoginPage(cookie.Value, "Unable to sign in. Try again later."))
+	reserved, err := db.ReserveLogin(r.Context(), rs.AppDB, clientIP(r))
+	if err != nil {
+		http.Error(w, "login unavailable", 503)
+		return
+	}
+	if !reserved {
+		loginOverloaded(w)
+		return
+	}
+	release, available := acquireHashSlot()
+	if !available {
+		loginOverloaded(w)
+		return
+	}
+	defer release()
+	var generation int64
+	if err := rs.AppDB.QueryRowContext(r.Context(), "SELECT generation FROM admin_security WHERE id=1").Scan(&generation); err != nil {
+		http.Error(w, "login unavailable", 503)
 		return
 	}
 	usernameOK := auth.SecureEqual(r.FormValue("username"), rs.AdminUsername)
 	passwordOK := auth.VerifyPassword(r.FormValue("password"), rs.AdminPasswordHash)
 	if !usernameOK || !passwordOK {
-		_ = rs.Queries.RecordLoginAttempt(r.Context(), ip)
 		w.WriteHeader(http.StatusUnauthorized)
 		rs.render(w, r, views.AdminLoginPage(cookie.Value, "Unable to sign in. Check your credentials."))
 		return
 	}
-	_ = rs.Queries.ClearLoginAttempts(r.Context(), ip)
 	rawToken, err := randomToken(32)
 	if err != nil {
 		http.Error(w, "login unavailable", http.StatusInternalServerError)
@@ -239,11 +269,9 @@ func (rs Resource) adminLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "login unavailable", http.StatusInternalServerError)
 		return
 	}
-	expires := time.Now().UTC().Add(7 * 24 * time.Hour)
-	if err := rs.Queries.CreateAdminSession(r.Context(), db.CreateAdminSessionParams{
-		TokenHash: hashToken(rawToken), CsrfToken: csrfToken, ExpiresAt: expires,
-	}); err != nil {
-		http.Error(w, "login unavailable", http.StatusInternalServerError)
+	expires := time.Now().UTC().Add(12 * time.Hour)
+	if ok, err := db.CreateBoundSession(r.Context(), rs.AppDB, hashToken(rawToken), csrfToken, rs.fingerprint(), generation, expires); err != nil || !ok {
+		http.Error(w, "login unavailable", 503)
 		return
 	}
 	setSessionCookie(w, r, rawToken, expires)
@@ -251,20 +279,35 @@ func (rs Resource) adminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func clientIP(r *http.Request) string {
-	if forwarded := strings.TrimSpace(strings.Split(r.Header.Get("X-Forwarded-For"), ",")[0]); forwarded != "" {
-		if ip := net.ParseIP(forwarded); ip != nil {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return "unknown"
+	}
+	peer := net.ParseIP(host)
+	if peer == nil {
+		return "unknown"
+	}
+	if !peer.IsLoopback() {
+		return peer.String()
+	}
+	chain := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+	for i := len(chain) - 1; i >= 0; i-- {
+		ip := net.ParseIP(strings.TrimSpace(chain[i]))
+		if ip == nil {
+			return peer.String()
+		}
+		if !ip.IsLoopback() {
 			return ip.String()
 		}
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		return host
-	}
-	return r.RemoteAddr
+	return peer.String()
 }
 
 func (rs Resource) adminLogout(w http.ResponseWriter, r *http.Request) {
-	_ = rs.Queries.DeleteAdminSession(r.Context(), adminSession(r).TokenHash)
+	if err := rs.Queries.DeleteAdminSession(r.Context(), adminSession(r).TokenHash); err != nil {
+		http.Error(w, "logout unavailable", 503)
+		return
+	}
 	clearSessionCookie(w, r)
 	http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
 }
@@ -380,6 +423,9 @@ func parsePostForm(r *http.Request) (views.AdminPostForm, string, error) {
 		StoreURL:      strings.TrimSpace(r.FormValue("store_url")),
 		PublishedDate: r.FormValue("published_date"),
 		UpdatedAt:     r.FormValue("updated_at"),
+	}
+	if len(r.FormValue("body_md")) > 1<<20 {
+		return form, "", errors.New("Markdown exceeds 1 MiB")
 	}
 	if form.Slug == "" {
 		form.Slug = slugify(form.Title)
@@ -574,6 +620,10 @@ func (rs Resource) adminDeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rs Resource) adminPreview(w http.ResponseWriter, r *http.Request) {
+	if len(r.FormValue("body_md")) > 1<<20 {
+		http.Error(w, "Markdown exceeds 1 MiB", 413)
+		return
+	}
 	html, err := rs.Markdown.Render(r.FormValue("body_md"))
 	if err != nil {
 		http.Error(w, "failed to render preview", http.StatusInternalServerError)
@@ -626,6 +676,15 @@ func (rs Resource) adminUploadMedia(w http.ResponseWriter, r *http.Request) {
 	if !allowed || declared != detected {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		rs.renderMedia(w, r, "File type is unsupported or does not match its contents.")
+		return
+	}
+	cfg, _, decodeErr := image.DecodeConfig(bytes.NewReader(data))
+	if decodeErr != nil || cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > 40_000_000 {
+		http.Error(w, "invalid image dimensions", 422)
+		return
+	}
+	if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+		http.Error(w, "invalid image", 422)
 		return
 	}
 	random, err := randomToken(18)
@@ -788,4 +847,45 @@ func (rs Resource) adminUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	settings, _ := rs.Queries.GetSiteSettings(r.Context())
 	rs.render(w, r, views.AdminSettingsPage(settings, adminSession(r).CSRFToken, "Settings saved."))
+}
+
+var hashSlots = make(chan struct{}, 2)
+
+type secureOriginKey struct{}
+
+func sessionCookieName(r *http.Request) string {
+	if requestIsSecure(r) {
+		return "__Host-portfolio_admin_session"
+	}
+	return adminSessionCookie
+}
+func loginOverloaded(w http.ResponseWriter) {
+	slog.Warn("login throttled")
+	w.Header().Set("Retry-After", "900")
+	http.Error(w, "Unable to sign in. Try again later.", 429)
+}
+func (rs Resource) fingerprint() string {
+	return hashToken(rs.AdminUsername + "\x00" + rs.AdminPasswordHash)
+}
+func (rs Resource) validSession(ctx context.Context, hash string) bool {
+	var valid bool
+	err := rs.AppDB.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM admin_sessions s JOIN admin_security a ON a.id=1 AND a.generation=s.generation WHERE s.token_hash=? AND s.credential_fingerprint=?)`, hash, rs.fingerprint()).Scan(&valid)
+	return err == nil && valid
+}
+func (rs Resource) adminRevokeAll(w http.ResponseWriter, r *http.Request) {
+	if err := db.RevokeSessions(r.Context(), rs.AppDB); err != nil {
+		http.Error(w, "revocation unavailable", 503)
+		return
+	}
+	clearSessionCookie(w, r)
+	http.Redirect(w, r, "/admin/login", 303)
+}
+
+func acquireHashSlot() (func(), bool) {
+	select {
+	case hashSlots <- struct{}{}:
+		return func() { <-hashSlots }, true
+	default:
+		return nil, false
+	}
 }

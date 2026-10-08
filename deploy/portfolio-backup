@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+"""Consistent portfolio backup. A short service pause also freezes upload changes.
+Encryption-key recovery is deliberately separate; no environment file is copied.
+"""
+import datetime
+import fcntl
+import hashlib
+import json
+import pathlib
+import shutil
+import sqlite3
+import subprocess
+import tempfile
+
+
+def backup(data, destination):
+    destination.mkdir(mode=0o700)
+    for name in ('app.db', 'dbos.db'):
+        with sqlite3.connect(f'file:{data / name}?mode=ro', uri=True) as source, sqlite3.connect(destination / name) as target:
+            source.backup(target)
+            if target.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                raise RuntimeError('backup integrity check failed')
+    shutil.copytree(data / 'uploads', destination / 'uploads', symlinks=False)
+    manifest = {}
+    for path in destination.rglob('*'):
+        if path.is_file():
+            manifest[str(path.relative_to(destination))] = hashlib.sha256(path.read_bytes()).hexdigest()
+    (destination / 'manifest.json').write_text(json.dumps(manifest, sort_keys=True))
+
+
+def restore_test(source):
+    with tempfile.TemporaryDirectory(prefix='portfolio-restore-') as temporary:
+        restored = pathlib.Path(temporary) / 'data'
+        shutil.copytree(source, restored)
+        for name, digest in json.loads((restored / 'manifest.json').read_text()).items():
+            if hashlib.sha256((restored / name).read_bytes()).hexdigest() != digest:
+                raise RuntimeError('restore digest mismatch')
+        for name in ('app.db', 'dbos.db'):
+            with sqlite3.connect(restored / name) as connection:
+                if connection.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                    raise RuntimeError('restore integrity failed')
+
+
+def main():
+    root = pathlib.Path('/srv/new-portfolio/backups')
+    root.mkdir(mode=0o700, exist_ok=True)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    destination = root / stamp
+    # Shares the deployment lock. No backup overlaps release activation.
+    with open('/run/lock/new-portfolio.deploy', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        active = subprocess.run(['/usr/bin/systemctl', 'is-active', '--quiet', 'new-portfolio.service']).returncode == 0
+        subprocess.run(['/usr/bin/systemctl', 'stop', 'new-portfolio.service'], check=True)
+        try:
+            backup(pathlib.Path('/srv/new-portfolio/data'), destination)
+        finally:
+            if active:
+                subprocess.run(['/usr/bin/systemctl', 'start', 'new-portfolio.service'], check=True)
+        restore_test(destination)
+        # Keep the newest backup for each of seven days. Never prune before restore validation.
+        days = set()
+        for old in sorted(root.iterdir(), reverse=True):
+            if old.is_symlink() or not old.is_dir() or len(old.name) != 16 or not (old / 'manifest.json').is_file():
+                continue
+            day = old.name[:8]
+            if day in days or len(days) >= 7:
+                shutil.rmtree(old)
+            else:
+                days.add(day)
+    print('portfolio backup and disposable restore verified:', destination.name)
+
+
+if __name__ == '__main__':
+    main()

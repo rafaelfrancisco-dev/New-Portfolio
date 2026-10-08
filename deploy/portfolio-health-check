@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+import json
+import shutil
+import subprocess
+import urllib.request
+
+issues = []
+try:
+    request = urllib.request.Request('http://127.0.0.1:8081/healthz', headers={'Host': 'imaginarymakings.dev'})
+    with urllib.request.urlopen(request, timeout=5) as response:
+        if response.status != 200:
+            issues.append('unhealthy')
+except Exception:
+    issues.append('unhealthy')
+result = subprocess.run(['/usr/bin/systemctl', 'show', 'new-portfolio.service', '-p', 'MemoryCurrent', '--value'], capture_output=True, text=True)
+if result.stdout.strip().isdigit() and int(result.stdout.strip()) > 384 * 1024**2:
+    issues.append('memory above high watermark')
+if shutil.disk_usage('/srv/new-portfolio').free < 2 * 1024**3:
+    issues.append('disk below deployment minimum')
+logs = subprocess.run(['/usr/bin/journalctl', '-u', 'new-portfolio.service', '--since', '5 minutes ago', '-o', 'cat', '--no-pager'], capture_output=True, text=True)
+if logs.stdout.count('throttled') >= 10:
+    issues.append('repeated throttling')
+print(json.dumps({'service': 'new-portfolio', 'issues': issues}))

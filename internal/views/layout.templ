@@ -21,7 +21,9 @@ templ Layout(settings db.SiteSetting, title string, path string, active string) 
 			<link rel="icon" type="image/svg+xml" href="/static/favicon.svg"/>
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			<link rel="alternate" type="application/rss+xml" title={ settings.DisplayName + " — Journal" } href="/journal/feed.xml"/>
-			<script src="/static/js/htmx.min.js" defer></script>
+			<meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false}'/>
+ <script src="/static/js/htmx.min.js" defer></script>
+ <script src="/static/js/photography.js" defer></script>
 		</head>
 		<body class="min-h-full bg-bg text-ink font-sans antialiased flex flex-col">
 			<header class="flex items-baseline justify-between gap-5 flex-wrap px-6 md:px-11 py-[26px] border-b border-line" style="view-transition-name: site-header">

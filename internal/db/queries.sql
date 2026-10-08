@@ -168,3 +168,12 @@ FROM posts;
 
 -- name: CountMedia :one
 SELECT COUNT(*) FROM media;
+
+-- name: ListJournalPage :many
+SELECT * FROM posts WHERE status='published' AND published_at IS NOT NULL
+AND (sqlc.arg(category_filter)='all' OR category=sqlc.arg(category_filter))
+ORDER BY published_at DESC,id DESC LIMIT 20 OFFSET sqlc.arg(page_offset);
+
+-- name: CountJournalPosts :one
+SELECT count(*) FROM posts WHERE status='published' AND published_at IS NOT NULL
+AND (sqlc.arg(category_filter)='all' OR category=sqlc.arg(category_filter));

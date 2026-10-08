@@ -1,0 +1,35 @@
+2026-10-08; base revision 91b6136; temporary SQLite databases only
+Command: go test -tags securityaudit ./internal/handlers -run TestSecurityAudit -v
+Passing reproductions document weaknesses; they do not assert that the application is secure.
+
+    security_audit_test.go:75: All 11 admin POST routes reject anonymous, missing-CSRF and foreign-Origin requests; admin reads and callback require authentication.
+--- PASS: TestSecurityAuditWriteRouteGuards (0.18s)
+    security_audit_test.go:91: CONFIRMED: same TCP peer bypasses 429 by changing X-Forwarded-For. Exploitability through production proxy depends on header sanitization.
+--- PASS: TestSecurityAuditForwardedIPBypassesThrottle (0.60s)
+    security_audit_test.go:127: CONFIRMED: concurrent requests exceeded five-attempt budget: statuses=[401 401] attempts=6
+--- PASS: TestSecurityAuditConcurrentLoginBudget (0.18s)
+    security_audit_test.go:166: CONFIRMED: login parsed a 12 MiB file before rejecting invalid CSRF, without credentials; no explicit total body cap exists.
+--- PASS: TestSecurityAuditLoginParsesOversizedMultipart (0.09s)
+    security_audit_test.go:175: /admin/login Content-Security-Policy=""
+    security_audit_test.go:175: /admin/login X-Frame-Options=""
+    security_audit_test.go:175: /admin/login Cache-Control=""
+    security_audit_test.go:175: /admin/login Referrer-Policy=""
+    security_audit_test.go:175: /admin/login Strict-Transport-Security=""
+    security_audit_test.go:175: /admin Content-Security-Policy=""
+    security_audit_test.go:175: /admin X-Frame-Options=""
+    security_audit_test.go:175: /admin Cache-Control=""
+    security_audit_test.go:175: /admin Referrer-Policy=""
+    security_audit_test.go:175: /admin Strict-Transport-Security=""
+    security_audit_test.go:175: /admin/posts/1/edit Content-Security-Policy=""
+    security_audit_test.go:175: /admin/posts/1/edit X-Frame-Options=""
+    security_audit_test.go:175: /admin/posts/1/edit Cache-Control=""
+    security_audit_test.go:175: /admin/posts/1/edit Referrer-Policy=""
+    security_audit_test.go:175: /admin/posts/1/edit Strict-Transport-Security=""
+--- PASS: TestSecurityAuditAdminResponseHeaders (0.15s)
+    security_audit_test.go:195: CONFIRMED: existing session remains authorized after changing the configured password hash and recreating the server.
+--- PASS: TestSecurityAuditPasswordRotationKeepsSession (0.22s)
+    security_audit_test.go:213: Controlled temporary-database failure response: get site settings: SQL logic error: no such table: site_settings (1)
+    security_audit_test.go:214: RSS trusts request Host; internal error contains schema name: true
+--- PASS: TestSecurityAuditInternalErrorsAndHost (0.08s)
+PASS
+ok  	go-port/internal/handlers	1.521s

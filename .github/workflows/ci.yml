@@ -5,13 +5,20 @@ on:
     branches: [main]
   pull_request:
 
+# Default to read-only; no job here needs to write to the repo, comment on
+# PRs, or publish anything, so the GITHUB_TOKEN carries no extra authority.
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
           cache: true
@@ -34,6 +41,9 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
   deploy:
     name: Deploy to smalljammy
     needs: ci
@@ -44,22 +54,26 @@ jobs:
       cancel-in-progress: false
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Build production binary
+        id: build
         env:
           STAGING_DIR: /srv/new-portfolio/staging/${{ github.sha }}
         run: |
           install -d -m 0750 "$STAGING_DIR"
           CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "$STAGING_DIR/server" ./cmd/server
+          echo "digest=$(sha256sum "$STAGING_DIR/server" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy production service
-        run: sudo /usr/local/sbin/deploy-new-portfolio "${{ github.sha }}"
+        run: sudo /usr/local/sbin/deploy-new-portfolio "${{ github.sha }}" "${{ steps.build.outputs.digest }}"
 
       - name: Verify health endpoint
         run: curl --fail --silent --show-error --retry 12 --retry-delay 2 --retry-connrefused http://127.0.0.1:8081/healthz

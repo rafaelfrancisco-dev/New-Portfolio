@@ -9,11 +9,18 @@ import (
 	"time"
 )
 
+type AdminSecurity struct {
+	ID         int64
+	Generation int64
+}
+
 type AdminSession struct {
-	TokenHash string
-	CsrfToken string
-	CreatedAt time.Time
-	ExpiresAt time.Time
+	TokenHash             string
+	CsrfToken             string
+	CreatedAt             time.Time
+	ExpiresAt             time.Time
+	CredentialFingerprint string
+	Generation            int64
 }
 
 type FlickrAlbum struct {
@@ -69,11 +76,12 @@ type FlickrPhoto struct {
 }
 
 type FlickrSnapshot struct {
-	ID          string
-	StartedAt   time.Time
-	CompletedAt sql.NullTime
-	Status      string
-	Error       string
+	ID              string
+	StartedAt       time.Time
+	CompletedAt     sql.NullTime
+	Status          string
+	Error           string
+	FeaturedPhotoID sql.NullString
 }
 
 type FlickrSyncStatus struct {

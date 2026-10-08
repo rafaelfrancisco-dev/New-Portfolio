@@ -1,0 +1,10 @@
+[Unit]
+Description=Portfolio health and resource check
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/sbin/portfolio-health-check
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

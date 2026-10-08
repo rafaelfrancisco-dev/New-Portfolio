@@ -7,7 +7,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -61,10 +62,10 @@ func (s Store) RecordFailure(ctx context.Context, now time.Time, cause error) {
 	if _, err = tx.ExecContext(ctx, `DELETE FROM flickr_snapshots WHERE status='failed'`); err != nil {
 		return
 	}
-	if _, err = tx.ExecContext(ctx, `INSERT INTO flickr_snapshots(id,started_at,completed_at,status,error) VALUES(?,?,?,'failed',?)`, id, now, now, cause.Error()); err != nil {
+	if _, err = tx.ExecContext(ctx, `INSERT INTO flickr_snapshots(id,started_at,completed_at,status,error) VALUES(?,?,?,'failed',?)`, id, now, now, "Flickr synchronization failed"); err != nil {
 		return
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE flickr_sync_status SET last_attempt_at=?,last_error=? WHERE id=1`, now, cause.Error()); err != nil {
+	if _, err = tx.ExecContext(ctx, `UPDATE flickr_sync_status SET last_attempt_at=?,last_error=? WHERE id=1`, now, "Flickr synchronization failed"); err != nil {
 		return
 	}
 	_ = tx.Commit()
@@ -179,8 +180,8 @@ func (s Store) ReplaceSnapshot(ctx context.Context, albums []AlbumPhotos, now ti
 		return err
 	}
 	fail := func(cause error) error {
-		_, _ = s.DB.ExecContext(ctx, `UPDATE flickr_snapshots SET status='failed',completed_at=?,error=? WHERE id=?`, time.Now().UTC(), cause.Error(), id)
-		_, _ = s.DB.ExecContext(ctx, `UPDATE flickr_sync_status SET last_attempt_at=?,last_error=? WHERE id=1`, now, cause.Error())
+		_, _ = s.DB.ExecContext(ctx, `UPDATE flickr_snapshots SET status='failed',completed_at=?,error=? WHERE id=?`, time.Now().UTC(), "Flickr synchronization failed", id)
+		_, _ = s.DB.ExecContext(ctx, `UPDATE flickr_sync_status SET last_attempt_at=?,last_error=? WHERE id=1`, now, "Flickr synchronization failed")
 		return cause
 	}
 	tx, err := s.DB.BeginTx(ctx, nil)
@@ -210,7 +211,7 @@ func (s Store) ReplaceSnapshot(ctx context.Context, albums []AlbumPhotos, now ti
 			}
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE flickr_snapshots SET status='active',completed_at=? WHERE id=?`, now, id); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE flickr_snapshots SET status='active',completed_at=?,featured_photo_id=(SELECT photo_id FROM flickr_photos WHERE snapshot_id=? ORDER BY random() LIMIT 1) WHERE id=?`, now, id, id); err != nil {
 		return failTx(err)
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE flickr_snapshots SET status='building' WHERE status='active' AND id<>?`, id); err != nil {
@@ -231,132 +232,170 @@ func (s Store) ReplaceSnapshot(ctx context.Context, albums []AlbumPhotos, now ti
 func scanPhoto(rows interface{ Scan(...any) error }) (Photo, error) {
 	var p Photo
 	err := rows.Scan(&p.ID, &p.Title, &p.Description, &p.PageURL, &p.SmallURL, &p.LargeURL, &p.Width, &p.Height, &p.TakenAt, &p.Location, &p.Camera, &p.Lens, &p.Exposure, &p.Aperture, &p.ISO, &p.FocalLength)
+	if err == nil {
+		if !safeFlickrURL(p.PageURL, false) {
+			p.PageURL = ""
+		}
+		if !safeFlickrURL(p.SmallURL, true) {
+			p.SmallURL = ""
+		}
+		if !safeFlickrURL(p.LargeURL, true) {
+			p.LargeURL = ""
+		}
+	}
 	return p, err
 }
 
-// loadGallery returns every photo matching filter, ordered newest-taken
-// first, with no pagination applied. Store.Photo and Store.RandomPhoto use
-// this directly so prev/next wraps and random picks draw from the whole
-// filtered set rather than a single page.
-func (s Store) loadGallery(ctx context.Context, filter string, now time.Time) (Gallery, error) {
-	var result Gallery
-	var snapshot string
+const photoColumns = `p.photo_id,p.title,p.description,p.page_url,p.image_small_url,p.image_large_url,p.width,p.height,p.taken_at,p.location,p.camera,p.lens,p.exposure,p.aperture,p.iso,p.focal_length`
+
+func (s Store) snapshot(ctx context.Context, now time.Time) (string, time.Time, error) {
+	var id string
 	var completed time.Time
-	err := s.DB.QueryRowContext(ctx, `SELECT s.id,s.completed_at FROM flickr_sync_status st JOIN flickr_snapshots s ON s.id=st.active_snapshot_id WHERE st.id=1`).Scan(&snapshot, &completed)
+	err := s.DB.QueryRowContext(ctx, `SELECT s.id,s.completed_at FROM flickr_sync_status st JOIN flickr_snapshots s ON s.id=st.active_snapshot_id WHERE st.id=1`).Scan(&id, &completed)
+	if err == nil && now.Sub(completed) >= CacheLifetime {
+		err = sql.ErrNoRows
+	}
+	return id, completed, err
+}
+func (s Store) filter(ctx context.Context, snapshot, filter string) (string, error) {
+	if filter == "" || filter == "all" {
+		return "all", nil
+	}
+	var exists bool
+	err := s.DB.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM flickr_albums WHERE snapshot_id=? AND album_id=?)`, snapshot, filter).Scan(&exists)
+	if !exists {
+		filter = "all"
+	}
+	return filter, err
+}
+func photoWhere(snapshot, filter string) (string, []any) {
+	query := ` FROM flickr_photos p WHERE p.snapshot_id=?`
+	args := []any{snapshot}
+	if filter != "all" {
+		query += ` AND EXISTS(SELECT 1 FROM flickr_album_photos ap WHERE ap.snapshot_id=p.snapshot_id AND ap.photo_id=p.photo_id AND ap.album_id=?)`
+		args = append(args, filter)
+	}
+	return query, args
+}
+
+func (s Store) Gallery(ctx context.Context, filter string, now time.Time, page int) (Gallery, error) {
+	result := Gallery{Page: 1, PageSize: PhotosPerPage, TotalPages: 1}
+	snapshot, completed, err := s.snapshot(ctx, now)
 	if err == sql.ErrNoRows {
 		return result, nil
 	}
 	if err != nil {
 		return result, err
 	}
-	if now.Sub(completed) >= CacheLifetime {
-		return result, nil
+	filter, err = s.filter(ctx, snapshot, filter)
+	if err != nil {
+		return result, err
 	}
+	result.Filter = filter
+	result.Available = true
+	result.SyncedAt = completed
 	rows, err := s.DB.QueryContext(ctx, `SELECT album_id,title,description,position FROM flickr_albums WHERE snapshot_id=? ORDER BY position`, snapshot)
 	if err != nil {
 		return result, err
 	}
 	for rows.Next() {
 		var a Album
-		if err := rows.Scan(&a.ID, &a.Title, &a.Description, &a.Position); err != nil {
+		if err = rows.Scan(&a.ID, &a.Title, &a.Description, &a.Position); err != nil {
 			rows.Close()
 			return result, err
 		}
 		result.Albums = append(result.Albums, a)
 	}
+	err = rows.Err()
 	rows.Close()
-	valid := filter == "all"
-	for _, a := range result.Albums {
-		if a.ID == filter {
-			valid = true
-		}
-	}
-	if !valid {
-		filter = "all"
-	}
-	result.Filter = filter
-	query := `SELECT p.photo_id,p.title,p.description,p.page_url,p.image_small_url,p.image_large_url,p.width,p.height,p.taken_at,p.location,p.camera,p.lens,p.exposure,p.aperture,p.iso,p.focal_length FROM flickr_photos p JOIN flickr_album_photos ap ON ap.snapshot_id=p.snapshot_id AND ap.photo_id=p.photo_id WHERE p.snapshot_id=?`
-	args := []any{snapshot}
-	if filter != "all" {
-		query += ` AND ap.album_id=?`
-		args = append(args, filter)
-	}
-	query += ` GROUP BY p.photo_id ORDER BY p.taken_at DESC, p.photo_id DESC`
-	photoRows, err := s.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return result, err
 	}
-	defer photoRows.Close()
-	for photoRows.Next() {
-		p, err := scanPhoto(photoRows)
+	where, args := photoWhere(snapshot, filter)
+	if err = s.DB.QueryRowContext(ctx, `SELECT count(*)`+where, args...).Scan(&result.TotalPhotos); err != nil {
+		return result, err
+	}
+	result.TotalPages = max(1, (result.TotalPhotos+PhotosPerPage-1)/PhotosPerPage)
+	result.Page = min(max(1, page), result.TotalPages)
+	args = append(args, PhotosPerPage, (result.Page-1)*PhotosPerPage)
+	rows, err = s.DB.QueryContext(ctx, `SELECT `+photoColumns+where+` ORDER BY p.taken_at DESC,p.photo_id DESC LIMIT ? OFFSET ?`, args...)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		p, err := scanPhoto(rows)
 		if err != nil {
 			return result, err
 		}
 		result.Photos = append(result.Photos, p)
 	}
-	result.Available = true
-	result.SyncedAt = completed
-	return result, photoRows.Err()
-}
-
-// Gallery returns one page of photos matching filter, newest-taken first.
-// page is 1-indexed and clamped into [1, TotalPages].
-func (s Store) Gallery(ctx context.Context, filter string, now time.Time, page int) (Gallery, error) {
-	result, err := s.loadGallery(ctx, filter, now)
-	if err != nil {
-		return result, err
-	}
-	result.PageSize = PhotosPerPage
-	result.TotalPhotos = len(result.Photos)
-	result.TotalPages = (result.TotalPhotos + PhotosPerPage - 1) / PhotosPerPage
-	if result.TotalPages < 1 {
-		result.TotalPages = 1
-	}
-	if page < 1 {
-		page = 1
-	}
-	if page > result.TotalPages {
-		page = result.TotalPages
-	}
-	result.Page = page
-	start := (page - 1) * PhotosPerPage
-	end := start + PhotosPerPage
-	if start > len(result.Photos) {
-		start = len(result.Photos)
-	}
-	if end > len(result.Photos) {
-		end = len(result.Photos)
-	}
-	result.Photos = result.Photos[start:end]
-	return result, nil
+	return result, rows.Err()
 }
 
 func (s Store) Photo(ctx context.Context, id, filter string, now time.Time) (Photo, string, string, string, error) {
-	gallery, err := s.loadGallery(ctx, filter, now)
+	snapshot, _, err := s.snapshot(ctx, now)
 	if err != nil {
 		return Photo{}, "", "", "", err
 	}
-	for i, p := range gallery.Photos {
-		if p.ID == id {
-			prev := gallery.Photos[(i-1+len(gallery.Photos))%len(gallery.Photos)].ID
-			next := gallery.Photos[(i+1)%len(gallery.Photos)].ID
-			return p, prev, next, gallery.Filter, nil
-		}
+	filter, err = s.filter(ctx, snapshot, filter)
+	if err != nil {
+		return Photo{}, "", "", "", err
 	}
-	return Photo{}, "", "", "", sql.ErrNoRows
+	where, args := photoWhere(snapshot, filter)
+	p, err := scanPhoto(s.DB.QueryRowContext(ctx, `SELECT `+photoColumns+where+` AND p.photo_id=?`, append(args, id)...))
+	if err != nil {
+		return Photo{}, "", "", "", err
+	}
+	adjacent := func(newer bool) (string, error) {
+		cmp, order := "<", "DESC"
+		if newer {
+			cmp, order = ">", "ASC"
+		}
+		var id string
+		err := s.DB.QueryRowContext(ctx, `SELECT p.photo_id`+where+` AND (p.taken_at,p.photo_id) `+cmp+` (?,?) ORDER BY p.taken_at `+order+`,p.photo_id `+order+` LIMIT 1`, append(append([]any{}, args...), p.TakenAt, p.ID)...).Scan(&id)
+		if err == sql.ErrNoRows {
+			if newer {
+				order = "ASC"
+			} else {
+				order = "DESC"
+			}
+			err = s.DB.QueryRowContext(ctx, `SELECT p.photo_id`+where+` ORDER BY p.taken_at `+order+`,p.photo_id `+order+` LIMIT 1`, args...).Scan(&id)
+		}
+		return id, err
+	}
+	prev, err := adjacent(true)
+	if err != nil {
+		return Photo{}, "", "", "", err
+	}
+	next, err := adjacent(false)
+	return p, prev, next, filter, err
 }
 
-// RandomPhoto returns one photo picked at random from the full synced
-// gallery, for spots like the home page teaser that don't need the whole
-// grid. The bool is false when Flickr isn't connected, hasn't synced
-// recently enough, or has no photos.
+// The featured selection is cached in the snapshot at publication time.
 func (s Store) RandomPhoto(ctx context.Context, now time.Time) (Photo, bool, error) {
-	gallery, err := s.loadGallery(ctx, "all", now)
+	snapshot, _, err := s.snapshot(ctx, now)
+	if err == sql.ErrNoRows {
+		return Photo{}, false, nil
+	}
 	if err != nil {
 		return Photo{}, false, err
 	}
-	if !gallery.Available || len(gallery.Photos) == 0 {
+	p, err := scanPhoto(s.DB.QueryRowContext(ctx, `SELECT `+photoColumns+` FROM flickr_photos p WHERE p.snapshot_id=? AND p.photo_id=(SELECT featured_photo_id FROM flickr_snapshots WHERE id=?)`, snapshot, snapshot))
+	if err == sql.ErrNoRows {
 		return Photo{}, false, nil
 	}
-	return gallery.Photos[rand.Intn(len(gallery.Photos))], true, nil
+	return p, err == nil, err
+}
+
+func safeFlickrURL(raw string, image bool) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Port() != "" {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	if image {
+		return host == "staticflickr.com" || strings.HasSuffix(host, ".staticflickr.com")
+	}
+	return host == "www.flickr.com" || host == "flickr.com"
 }

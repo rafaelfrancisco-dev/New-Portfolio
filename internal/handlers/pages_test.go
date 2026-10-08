@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,9 +21,12 @@ import (
 )
 
 type testServer struct {
-	handler http.Handler
-	db      *sql.DB
-	uploads string
+	public   http.Handler
+	private  http.Handler
+	resource handlers.Resource
+	handler  http.Handler
+	db       *sql.DB
+	uploads  string
 }
 
 // newTestServer spins up the real route table against a throwaway SQLite
@@ -51,8 +55,9 @@ func newTestServer(t *testing.T) *testServer {
 		t.Fatal(err)
 	}
 
-	s := fuego.NewServer()
-	handlers.Register(s, handlers.Resource{
+	s := fuego.NewServer(fuego.WithErrorSerializer(handlers.SafeError))
+	resource := handlers.Resource{
+		PublicBaseURL: "http://example.com", AdminBaseURL: "http://example.com",
 		Queries:           db.New(sqlDB),
 		AppDB:             sqlDB,
 		DBOSDB:            sqlDB,
@@ -60,8 +65,21 @@ func newTestServer(t *testing.T) *testServer {
 		AdminPasswordHash: mustPasswordHash(t, "correct horse battery staple"),
 		UploadDir:         uploadDir,
 		Flickr:            flickrService,
+	}
+	handlers.RegisterPublic(s, resource)
+	private := fuego.NewServer(fuego.WithErrorSerializer(handlers.SafeError))
+	handlers.RegisterAdmin(private, resource)
+	origin, _ := url.Parse("http://example.com")
+	publicHandler := handlers.Boundary(s.Mux, origin, origin.String(), false)
+	privateHandler := handlers.Boundary(private.Mux, origin, origin.String(), true)
+	dispatch := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/admin") {
+			privateHandler.ServeHTTP(w, r)
+		} else {
+			publicHandler.ServeHTTP(w, r)
+		}
 	})
-	return &testServer{handler: s.Mux, db: sqlDB, uploads: uploadDir}
+	return &testServer{handler: dispatch, public: publicHandler, private: privateHandler, resource: resource, db: sqlDB, uploads: uploadDir}
 }
 
 func mustPasswordHash(t *testing.T, password string) string {

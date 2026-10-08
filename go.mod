@@ -1,6 +1,6 @@
 module go-port
 
-go 1.26.5
+go 1.27.1
 
 require (
 	github.com/a-h/templ v0.3.1020
@@ -10,8 +10,9 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pressly/goose/v3 v3.27.2
 	github.com/yuin/goldmark v1.8.4
-	golang.org/x/crypto v0.52.0
-	golang.org/x/term v0.43.0
+	golang.org/x/crypto v0.56.0
+	golang.org/x/image v0.45.0
+	golang.org/x/term v0.45.0
 	modernc.org/sqlite v1.53.0
 )
 
@@ -54,10 +55,10 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.21.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.73.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

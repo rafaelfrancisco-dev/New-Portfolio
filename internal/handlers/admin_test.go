@@ -161,7 +161,7 @@ func TestAdminSecureCookieAndExpiredSession(t *testing.T) {
 	response := server.do(t, request)
 	var session *http.Cookie
 	for _, cookie := range response.Result().Cookies() {
-		if cookie.Name == "portfolio_admin_session" {
+		if cookie.Name == "__Host-portfolio_admin_session" {
 			session = cookie
 		}
 	}

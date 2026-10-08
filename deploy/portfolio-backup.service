@@ -1,0 +1,6 @@
+[Unit]
+Description=Consistent portfolio backup and disposable restore verification
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/local/sbin/portfolio-backup

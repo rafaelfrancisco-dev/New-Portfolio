@@ -1,18 +1,17 @@
 package handlers
 
 import (
-	"net/http"
-
 	"github.com/go-fuego/fuego"
 	"github.com/go-fuego/fuego/option"
 
 	"go-port/internal/markdown"
-	"go-port/static"
 )
 
 // Register mounts all routes on the fuego server. Page routes show up in the
 // generated OpenAPI spec at /swagger.
-func Register(s *fuego.Server, rs Resource) {
+// Register is the public-only entry point. Administration must be mounted on a separate server.
+func Register(s *fuego.Server, rs Resource) { RegisterPublic(s, rs) }
+func defaults(rs Resource) Resource {
 	if rs.AdminUsername == "" {
 		rs.AdminUsername = "admin"
 	}
@@ -22,8 +21,13 @@ func Register(s *fuego.Server, rs Resource) {
 	if rs.Markdown == nil {
 		rs.Markdown = markdown.NewRenderer()
 	}
+	return rs
+}
+
+func RegisterPublic(s *fuego.Server, rs Resource) {
+	rs = defaults(rs)
 	// SSR pages
-	fuego.Get(s, "/", rs.homePage,
+	fuego.Get(s, "/{$}", rs.homePage,
 		option.Summary("Home page"),
 		option.Tags("pages"),
 	)
@@ -79,10 +83,16 @@ func Register(s *fuego.Server, rs Resource) {
 	)
 
 	// Embedded static assets (htmx, compiled tailwind css, fonts)
-	fuego.GetStd(s, "/static/", http.StripPrefix("/static/", http.FileServerFS(static.FS)).ServeHTTP,
+	fuego.GetStd(s, "/static/", staticHandler,
 		option.Hide(),
 	)
 
+}
+
+func RegisterAdmin(s *fuego.Server, rs Resource) {
+	rs = defaults(rs)
+	fuego.GetStd(s, "/static/", staticHandler, option.Hide())
+	fuego.GetStd(s, "/media/{filename}", rs.serveMedia, option.Hide())
 	registerAdminRoutes(s, rs)
 }
 
@@ -94,6 +104,7 @@ func registerAdminRoutes(s *fuego.Server, rs Resource) {
 	fuego.Use(admin, rs.adminAuthMiddleware)
 	fuego.GetStd(admin, "", rs.adminDashboard, option.Hide())
 	fuego.PostStd(admin, "/logout", rs.adminLogout, option.Hide())
+	fuego.PostStd(admin, "/revoke-all", rs.adminRevokeAll, option.Hide())
 	fuego.GetStd(admin, "/posts", rs.adminPosts, option.Hide())
 	fuego.GetStd(admin, "/posts/new", rs.adminNewPost, option.Hide())
 	fuego.PostStd(admin, "/posts", rs.adminCreatePost, option.Hide())

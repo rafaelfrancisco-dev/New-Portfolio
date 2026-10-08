@@ -22,6 +22,8 @@ import (
 
 // Resource groups the dependencies of all HTTP handlers.
 type Resource struct {
+	PublicBaseURL     string
+	AdminBaseURL      string
 	Queries           *db.Queries
 	DBOS              dbos.DBOSContext
 	AppDB             *sql.DB
@@ -127,15 +129,14 @@ func (rs Resource) journalPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if filter != "software" && filter != "photography" {
 		filter = "all"
 	}
-	var (
-		posts []db.Post
-		err   error
-	)
-	if filter == "all" {
-		posts, err = rs.Queries.ListPosts(c.Context())
-	} else {
-		posts, err = rs.Queries.ListPostsByCategory(c.Context(), filter)
+	count, err := rs.Queries.CountJournalPosts(c.Context(), filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "count journal posts")
 	}
+	totalPages := max(1, int((count+19)/20))
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	page = min(max(1, page), totalPages)
+	posts, err := rs.Queries.ListJournalPage(c.Context(), db.ListJournalPageParams{CategoryFilter: filter, PageOffset: int64((page - 1) * 20)})
 	if err != nil {
 		return nil, errors.Wrap(err, "list posts")
 	}
@@ -147,7 +148,7 @@ func (rs Resource) journalPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil {
 		return nil, err
 	}
-	return views.JournalPage(posts, filter, years, settings), nil
+	return views.JournalPage(posts, filter, years, settings, page, totalPages), nil
 }
 
 func (rs Resource) articlePage(c fuego.ContextNoBody) (fuego.Templ, error) {
@@ -203,16 +204,12 @@ func (rs Resource) adjacentPost(c fuego.ContextNoBody, post db.Post, query func(
 // journalFeed serves the journal as RSS 2.0, with links built from the
 // request host so the feed works on any domain it is deployed under.
 func (rs Resource) journalFeed(w http.ResponseWriter, r *http.Request) {
-	posts, err := rs.Queries.ListPosts(r.Context())
+	posts, err := rs.Queries.ListRecentPosts(r.Context(), 50)
 	if err != nil {
 		http.Error(w, "failed to list posts", http.StatusInternalServerError)
 		return
 	}
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	base := scheme + "://" + r.Host
+	base := rs.PublicBaseURL
 
 	settings, err := rs.siteSettings(r.Context())
 	if err != nil {

@@ -1,57 +1,142 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/python3
+"""Portfolio-only privileged artifact installer. Never executes staging files."""
+import fcntl
+import hashlib
+import os
+import pathlib
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
 
-readonly revision="${1:-}"
-if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
-	echo "usage: deploy-new-portfolio <40-character-git-sha>" >&2
-	exit 2
-fi
+BASE = pathlib.Path('/opt/new-portfolio')
+STAGING = pathlib.Path('/srv/new-portfolio/staging')
+SERVICE = 'new-portfolio.service'
 
-readonly staging_binary="/srv/new-portfolio/staging/$revision/server"
-readonly releases_dir="/opt/new-portfolio/releases"
-readonly release_dir="$releases_dir/$revision"
-readonly current_link="/opt/new-portfolio/current"
-readonly next_link="/opt/new-portfolio/current.next"
 
-if [[ ! -f "$staging_binary" || -L "$staging_binary" || ! -x "$staging_binary" ]]; then
-	echo "invalid staged binary: $staging_binary" >&2
-	exit 1
-fi
-if [[ "$(stat -c '%U:%G' "$staging_binary")" != "github:github" ]]; then
-	echo "staged binary must be owned by github:github" >&2
-	exit 1
-fi
+def open_no_symlinks(path):
+    """Resolve every component relative to an already-open directory descriptor."""
+    parts = pathlib.PurePosixPath(path).parts
+    if not parts or parts[0] != '/' or any(p in ('.', '..') for p in parts[1:]):
+        raise ValueError('invalid absolute path')
+    descriptor = os.open('/', os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for index, component in enumerate(parts[1:]):
+            flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+            if index < len(parts) - 2:
+                flags |= os.O_DIRECTORY
+            child = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+        result = descriptor
+        descriptor = -1
+        return result
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
 
-previous_release=""
-if [[ -L "$current_link" ]]; then
-	previous_release="$(readlink -f "$current_link")"
-fi
 
-install -d -o root -g root -m 0755 "$release_dir"
-install -o root -g root -m 0755 "$staging_binary" "$release_dir/server"
-ln -sfn "$release_dir" "$next_link"
-mv -Tf "$next_link" "$current_link"
+def health():
+    for _ in range(12):
+        result = subprocess.run(['/usr/bin/curl', '--fail', '--silent', '--max-time', '3',
+                                 '-H', 'Host: imaginarymakings.dev',
+                                 'http://127.0.0.1:8081/healthz'], stdout=subprocess.DEVNULL)
+        if result.returncode == 0:
+            return True
+        time.sleep(2)
+    return False
 
-rollback() {
-	if [[ -n "$previous_release" ]]; then
-		ln -sfn "$previous_release" "$next_link"
-		mv -Tf "$next_link" "$current_link"
-		systemctl restart new-portfolio.service || true
-	else
-		rm -f "$current_link"
-	fi
-}
 
-if ! systemctl restart new-portfolio.service; then
-	rollback
-	exit 1
-fi
+def activate(release):
+    next_link = BASE / 'current.next'
+    next_link.unlink(missing_ok=True)
+    next_link.symlink_to(release)
+    os.replace(next_link, BASE / 'current')
 
-if ! curl --fail --silent --show-error --retry 12 --retry-delay 2 \
-	--retry-connrefused http://127.0.0.1:8081/healthz >/dev/null; then
-	journalctl --unit new-portfolio.service --lines 50 --no-pager >&2 || true
-	rollback
-	exit 1
-fi
 
-echo "deployed new-portfolio revision $revision"
+def deploy(revision, expected):
+    if os.geteuid() != 0:
+        raise RuntimeError('must run as root')
+    with open('/run/lock/new-portfolio.deploy', 'a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if shutil.disk_usage(BASE).free < 2 * 1024**3:
+            raise RuntimeError('deployment requires at least 2 GiB free space')
+        releases = BASE / 'releases'
+        # Root-owned destinations must never resolve through runner-controlled links.
+        for directory in (BASE, releases):
+            descriptor = open_no_symlinks(directory)
+            info = os.fstat(descriptor)
+            os.close(descriptor)
+            if info.st_uid != 0 or info.st_mode & 0o022:
+                raise RuntimeError('release directories must be root-owned and not writable by others')
+        previous = None
+        current = BASE / 'current'
+        if current.is_symlink():
+            previous = current.resolve(strict=True)
+            if previous.parent != releases or not re.fullmatch('[0-9a-f]{40}', previous.name):
+                raise RuntimeError('invalid previous release')
+        release = releases / revision
+        if release.exists() or release.is_symlink():
+            raise RuntimeError('release already exists; choose a new revision')
+        temporary = pathlib.Path(tempfile.mkdtemp(prefix='.incoming-', dir=releases))
+        try:
+            descriptor = open_no_symlinks(STAGING / revision / 'server')
+            with os.fdopen(descriptor, 'rb') as source:
+                info = os.fstat(source.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size <= 0 or info.st_size > 256 * 1024**2:
+                    raise RuntimeError('invalid staged binary')
+                with open(temporary / 'server', 'xb') as target:
+                    digest = hashlib.sha256()
+                    copied = 0
+                    while chunk := source.read(1024 * 1024):
+                        copied += len(chunk)
+                        if copied > 256 * 1024**2:
+                            raise RuntimeError('staging file grew beyond maximum size')
+                        digest.update(chunk)
+                        target.write(chunk)
+                    target.flush()
+                    os.fsync(target.fileno())
+                if digest.hexdigest() != expected:
+                    raise RuntimeError('copied artifact digest mismatch')
+            os.chmod(temporary / 'server', 0o755)
+            os.chmod(temporary, 0o755)
+            os.rename(temporary, release)
+            activate(release)
+            try:
+                subprocess.run(['/usr/bin/systemctl', 'restart', SERVICE], check=True)
+                if not health():
+                    raise RuntimeError('health check failed')
+            except BaseException:
+                if previous:
+                    activate(previous)
+                    subprocess.run(['/usr/bin/systemctl', 'restart', SERVICE], check=False)
+                else:
+                    current.unlink(missing_ok=True)
+                    subprocess.run(['/usr/bin/systemctl', 'stop', SERVICE], check=False)
+                raise
+            # Only portfolio releases, after a successful activation, are pruned.
+            for old in releases.iterdir():
+                if re.fullmatch('[0-9a-f]{40}', old.name) and old not in (release, previous) and not old.is_symlink():
+                    shutil.rmtree(old)
+            # fd-based rmtree rejects a replaced directory symlink on supported Linux.
+            if not shutil.rmtree.avoids_symlink_attacks:
+                raise RuntimeError('safe staging cleanup unavailable')
+            stage = STAGING / revision
+            if not stage.is_symlink():
+                shutil.rmtree(stage)
+        finally:
+            if temporary.exists():
+                shutil.rmtree(temporary)
+        print('deployed portfolio revision', revision)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 3 or not re.fullmatch('[0-9a-f]{40}', sys.argv[1]) or not re.fullmatch('[0-9a-f]{64}', sys.argv[2]):
+        sys.exit('usage: deploy-new-portfolio <git-sha> <verified-artifact-sha256>')
+    try:
+        deploy(sys.argv[1], sys.argv[2])
+    except Exception as error:
+        sys.exit(str(error))

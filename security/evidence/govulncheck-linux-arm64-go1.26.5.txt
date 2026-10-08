@@ -1,0 +1,434 @@
+Fetching vulnerabilities from the database...
+
+Checking the code against the vulnerabilities...
+
+The package pattern matched the following 11 root packages:
+  go-port/internal/auth
+  go-port/cmd/adminhash
+  go-port/internal/db
+  go-port/internal/flickr
+  go-port/internal/content
+  go-port/internal/markdown
+  go-port/internal/views
+  go-port/static
+  go-port/internal/handlers
+  go-port/internal/workflows
+  go-port/cmd/server
+Govulncheck scanned the following 55 modules and the go1.26.5 standard library:
+  go-port
+  github.com/a-h/templ@v0.3.1020
+  github.com/aymerick/douceur@v0.2.0
+  github.com/cockroachdb/errors@v1.14.0
+  github.com/cockroachdb/logtags@v0.0.0-20230118201751-21c54148d20b
+  github.com/cockroachdb/redact@v1.1.5
+  github.com/dbos-inc/dbos-transact-golang@v0.19.0
+  github.com/dustin/go-humanize@v1.0.1
+  github.com/gabriel-vasile/mimetype@v1.4.11
+  github.com/getkin/kin-openapi@v0.144.0
+  github.com/getsentry/sentry-go@v0.46.0
+  github.com/go-fuego/fuego@v0.19.0
+  github.com/go-openapi/jsonpointer@v0.22.5
+  github.com/go-openapi/swag/jsonname@v0.25.5
+  github.com/go-playground/locales@v0.14.1
+  github.com/go-playground/universal-translator@v0.18.1
+  github.com/go-playground/validator/v10@v10.28.0
+  github.com/gogo/protobuf@v1.3.2
+  github.com/golang-jwt/jwt/v5@v5.3.0
+  github.com/google/uuid@v1.6.0
+  github.com/gorilla/css@v1.0.1
+  github.com/gorilla/schema@v1.4.1
+  github.com/gorilla/websocket@v1.5.3
+  github.com/jackc/pgerrcode@v0.0.0-20250907135507-afb5586c32a6
+  github.com/jackc/pgpassfile@v1.0.0
+  github.com/jackc/pgservicefile@v0.0.0-20240606120523-5a60cdf6a761
+  github.com/jackc/pgx/v5@v5.10.0
+  github.com/jackc/puddle/v2@v2.2.2
+  github.com/kr/pretty@v0.3.1
+  github.com/kr/text@v0.2.0
+  github.com/leodido/go-urn@v1.4.0
+  github.com/mfridman/interpolate@v0.0.2
+  github.com/microcosm-cc/bluemonday@v1.0.27
+  github.com/oasdiff/yaml@v0.1.1
+  github.com/oasdiff/yaml3@v0.0.14
+  github.com/pkg/errors@v0.9.1
+  github.com/pressly/goose/v3@v3.27.2
+  github.com/remyoudompheng/bigfft@v0.0.0-20230129092748-24d4a6f8daec
+  github.com/robfig/cron/v3@v3.0.1
+  github.com/rogpeppe/go-internal@v1.12.0
+  github.com/santhosh-tekuri/jsonschema/v6@v6.0.2
+  github.com/sethvargo/go-retry@v0.3.0
+  github.com/yuin/goldmark@v1.8.4
+  go.uber.org/multierr@v1.11.0
+  golang.org/x/crypto@v0.52.0
+  golang.org/x/net@v0.55.0
+  golang.org/x/sync@v0.21.0
+  golang.org/x/sys@v0.46.0
+  golang.org/x/term@v0.43.0
+  golang.org/x/text@v0.38.0
+  gopkg.in/yaml.v3@v3.0.1
+  modernc.org/libc@v1.73.4
+  modernc.org/mathutil@v1.7.1
+  modernc.org/memory@v1.11.0
+  modernc.org/sqlite@v1.53.0
+
+=== Symbol Results ===
+
+Vulnerability #1: GO-2026-6629
+    Panic parsing crafted input in x/text/secure/precis in golang.org/x/text
+  More info: https://pkg.go.dev/vuln/GO-2026-6629
+  Module: golang.org/x/text
+    Found in: golang.org/x/text@v0.38.0
+    Fixed in: golang.org/x/text@v0.41.0
+    Example traces found:
+      #1: for function golang.org/x/text/secure/precis.Profile.String
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:703:17
+        retry @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:5835:18
+        retryLoop @ github.com/dbos-inc/dbos-transact-golang/dbos/retry.go:84:14
+        newSystemDatabase @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:795:36
+        createDatabaseIfNotExists @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:166:32
+        ConnectConfig @ github.com/jackc/pgx/v5/conn.go:160:16
+        connect @ github.com/jackc/pgx/v5/conn.go:278:38
+        ConnectConfig @ github.com/jackc/pgx/v5/pgconn/pgconn.go:160:34
+        connectPreferred @ github.com/jackc/pgx/v5/pgconn/pgconn.go:265:28
+        connectOne @ github.com/jackc/pgx/v5/pgconn/pgconn.go:489:27
+        PgConn.scramAuth @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:44:27
+        newScramClient @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:197:47
+        Profile.String @ golang.org/x/text/secure/precis/profile.go:292:19
+
+Vulnerability #2: GO-2026-6218
+    Avoid quadratic complexity in resolvePath in net/url
+  More info: https://pkg.go.dev/vuln/GO-2026-6218
+  Standard library
+    Found in: net/url@go1.26.5
+    Fixed in: net/url@go1.26.6
+    Example traces found:
+      #1: for function net/url.URL.Parse
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:138:24
+        Client.Do @ stdlib/src/net/http/client.go:604:13
+        Client.do @ stdlib/src/net/http/client.go:662:27
+        URL.Parse @ stdlib/src/net/url/url.go:1108:15
+      #2: for function net/url.URL.ResolveReference
+        init @ go-port/internal/handlers/health.go:5:2
+        init @ github.com/go-fuego/fuego/engine.go:12:2
+        init @ github.com/getkin/kin-openapi/openapi3/schema_jsonschema_validator.go:9:2
+        init @ github.com/santhosh-tekuri/jsonschema/v6/compiler.go:1:1
+        init#1 @ github.com/santhosh-tekuri/jsonschema/v6/draft.go:131:24
+        Compiler.MustCompile @ github.com/santhosh-tekuri/jsonschema/v6/compiler.go:170:23
+        Compiler.Compile @ github.com/santhosh-tekuri/jsonschema/v6/compiler.go:183:36
+        roots.resolveFragment @ github.com/santhosh-tekuri/jsonschema/v6/roots.go:63:21
+        roots.orLoad @ github.com/santhosh-tekuri/jsonschema/v6/roots.go:38:19
+        roots.addRoot @ github.com/santhosh-tekuri/jsonschema/v6/roots.go:48:31
+        roots.collectResources @ github.com/santhosh-tekuri/jsonschema/v6/roots.go:74:32
+        roots._collectResources @ github.com/santhosh-tekuri/jsonschema/v6/roots.go:114:23
+        url.join @ github.com/santhosh-tekuri/jsonschema/v6/util.go:41:35
+        URL.ResolveReference @ stdlib/src/net/url/url.go:1122:15
+
+Vulnerability #3: GO-2026-6090
+    Limit handshake messages we are willing to accept post-handshake in
+    crypto/tls
+  More info: https://pkg.go.dev/vuln/GO-2026-6090
+  Standard library
+    Found in: crypto/tls@go1.26.5
+    Fixed in: crypto/tls@go1.26.6
+    Example traces found:
+      #1: for function crypto/tls.Conn.HandshakeContext
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:744:21
+        conductor.launch @ github.com/dbos-inc/dbos-transact-golang/dbos/conductor.go:70:2
+        conductor.run @ github.com/dbos-inc/dbos-transact-golang/dbos/conductor.go:183:23
+        conductor.connect @ github.com/dbos-inc/dbos-transact-golang/dbos/conductor.go:248:32
+        Dialer.Dial @ github.com/gorilla/websocket/client.go:117:22
+        Dialer.DialContext @ github.com/gorilla/websocket/client.go:350:21
+        doHandshake @ github.com/gorilla/websocket/tls_handshake.go:12:36
+        Conn.HandshakeContext @ stdlib/src/crypto/tls/conn.go:1512:16
+      #2: for function crypto/tls.Conn.Read
+        Cipher.Encrypt @ go-port/internal/flickr/crypto.go:32:26
+        ReadFull @ stdlib/src/io/io.go:354:20
+        ReadAtLeast @ stdlib/src/io/io.go:335:19
+        Conn.Read @ stdlib/src/crypto/tls/conn.go:1378:16
+      #3: for function crypto/tls.Conn.Write
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:142:2
+        transportResponseBody.Close @ stdlib/src/net/http/internal/http2/transport.go:2423:14
+        Writer.Flush @ stdlib/src/bufio/bufio.go:642:22
+        Conn.Write @ stdlib/src/crypto/tls/conn.go:1201:16
+      #4: for function crypto/tls.Dialer.DialContext
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:138:24
+        Client.Do @ stdlib/src/net/http/client.go:604:13
+        Client.do @ stdlib/src/net/http/client.go:745:36
+        Client.send @ stdlib/src/net/http/client.go:187:30
+        send @ stdlib/src/net/http/client.go:266:26
+        Transport.RoundTrip @ stdlib/src/net/http/roundtrip.go:33:20
+        Transport.roundTrip @ stdlib/src/net/http/transport.go:644:34
+        http2RoundTripper.RoundTrip @ stdlib/src/net/http/http2.go:438:29
+        http2RoundTrip @ stdlib/src/net/http/http2.go:321:18
+        Transport.RoundTrip @ stdlib/src/net/http/internal/http2/transport.go:380:23
+        Transport.RoundTripOpt @ stdlib/src/net/http/internal/http2/transport.go:418:38
+        noDialClientConnPool.GetClientConn @ stdlib/src/net/http/internal/http2/client_conn_pool.go:259:24
+        clientConnPool.getClientConn @ stdlib/src/net/http/internal/http2/client_conn_pool.go:45:32
+        Transport.dialClientConn @ stdlib/src/net/http/internal/http2/transport.go:555:25
+        Transport.dialTLS @ stdlib/src/net/http/internal/http2/transport.go:574:36
+        Transport.dialTLSWithContext @ stdlib/src/net/http/internal/http2/transport.go:3211:31
+        Dialer.DialContext @ stdlib/src/crypto/tls/tls.go:231:18
+
+Vulnerability #4: GO-2026-6089
+    Apply ReadHeaderTimeout when doing unencrypted HTTP/2 check in net/http
+  More info: https://pkg.go.dev/vuln/GO-2026-6089
+  Standard library
+    Found in: net/http@go1.26.5
+    Fixed in: net/http@go1.26.6
+    Example traces found:
+      #1: for function net/http.Server.ListenAndServe
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:719:27
+        adminServer.Start @ github.com/dbos-inc/dbos-transact-golang/dbos/admin_server.go:603:2
+        Start @ github.com/dbos-inc/dbos-transact-golang/dbos/admin_server.go:605:37
+        Server.ListenAndServe @ stdlib/src/net/http/server.go:3450:18
+      #2: for function net/http.Server.Serve
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:105:2
+        run @ go-port/cmd/server/main.go:105:28
+        Server.Run @ github.com/go-fuego/fuego/serve.go:22:16
+        Server.Serve @ stdlib/src/net/http/server.go:3506:18
+
+Vulnerability #5: GO-2026-6088
+    Add recursion depth guard during decode in encoding/xml
+  More info: https://pkg.go.dev/vuln/GO-2026-6088
+  Standard library
+    Found in: encoding/xml@go1.26.5
+    Fixed in: encoding/xml@go1.26.6
+    Example traces found:
+      #1: for function encoding/xml.Decoder.Decode
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:105:2
+        run @ go-port/cmd/server/main.go:105:28
+        Server.Run @ github.com/go-fuego/fuego/serve.go:22:16
+        Server.Serve @ stdlib/src/net/http/server.go:3581:3
+        conn.serve @ stdlib/src/net/http/server.go:2137:36
+        serverHandler.ServeHTTP @ stdlib/src/net/http/server.go:3413:19
+        HandlerFunc.ServeHTTP @ stdlib/src/net/http/server.go:2338:3
+        HTTPHandler[github.com/go-fuego/fuego.tokenResponse, github.com/go-fuego/fuego.LoginPayload, any] @ github.com/go-fuego/fuego/serve.go:109:7
+        Flow[github.com/go-fuego/fuego.LoginPayload, github.com/go-fuego/fuego.tokenResponse, any] @ github.com/go-fuego/fuego/serve.go:145:24
+        LoginHandler @ github.com/go-fuego/fuego/security.go:447:22
+        netHttpContext[github.com/go-fuego/fuego.LoginPayload, any].Body @ github.com/go-fuego/fuego/ctx.go:363:19
+        body[github.com/go-fuego/fuego.LoginPayload, any] @ github.com/go-fuego/fuego/ctx.go:541:26
+        readJSON[github.com/go-fuego/fuego.LoginPayload] @ github.com/go-fuego/fuego/deserialization.go:49:16
+        read[github.com/go-fuego/fuego.LoginPayload] @ github.com/go-fuego/fuego/deserialization.go:97:19
+        Decoder.Decode @ stdlib/src/encoding/xml/read.go:139:19
+      #2: for function encoding/xml.Unmarshal
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:74:37
+        NewDBOSContext @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:628:36
+        newSystemDatabase @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:817:40
+        shouldMigrate @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:460:15
+        poolRow.Scan @ github.com/jackc/pgx/v5/pgxpool/rows.go:110:19
+        connRow.Scan @ github.com/jackc/pgx/v5/rows.go:116:11
+        baseRows.Scan @ github.com/jackc/pgx/v5/rows.go:281:32
+        scanPlanXMLToXMLUnmarshal.Scan @ github.com/jackc/pgx/v5/pgtype/xml.go:177:20
+        initDefaultMap @ github.com/jackc/pgx/v5/pgtype/pgtype_default.go:110:24
+        Unmarshal @ stdlib/src/encoding/xml/read.go:133:6
+
+Vulnerability #6: GO-2026-5972
+    Enforce maximum recursion depth in encoding/asn1
+  More info: https://pkg.go.dev/vuln/GO-2026-5972
+  Standard library
+    Found in: encoding/asn1@go1.26.5
+    Fixed in: encoding/asn1@go1.26.6
+    Example traces found:
+      #1: for function encoding/asn1.Unmarshal
+        Renderer.Render @ go-port/internal/markdown/render.go:42:30
+        markdown.Convert @ github.com/yuin/goldmark/markdown.go:118:26
+        renderer.Render @ github.com/yuin/goldmark/renderer/renderer.go:136:15
+        Once.Do @ stdlib/src/sync/once.go:69:11
+        Once.doSlow @ stdlib/src/sync/once.go:78:4
+        AppendCertsFromPEM @ stdlib/src/crypto/x509/cert_pool.go:246:37
+        ParseCertificate @ stdlib/src/crypto/x509/parser.go:1159:31
+        parseCertificate @ stdlib/src/crypto/x509/parser.go:1038:55
+        getSignatureAlgorithmFromAI @ stdlib/src/crypto/x509/x509.go:460:29
+        Unmarshal @ stdlib/src/encoding/asn1/asn1.go:1149:6
+
+Vulnerability #7: GO-2026-5970
+    Infinite loop on invalid input in golang.org/x/text
+  More info: https://pkg.go.dev/vuln/GO-2026-5970
+  Module: golang.org/x/text
+    Found in: golang.org/x/text@v0.38.0
+    Fixed in: golang.org/x/text@v0.39.0
+    Example traces found:
+      #1: for function golang.org/x/text/unicode/norm.Form.Properties
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:703:17
+        retry @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:5835:18
+        retryLoop @ github.com/dbos-inc/dbos-transact-golang/dbos/retry.go:84:14
+        newSystemDatabase @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:795:36
+        createDatabaseIfNotExists @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:166:32
+        ConnectConfig @ github.com/jackc/pgx/v5/conn.go:160:16
+        connect @ github.com/jackc/pgx/v5/conn.go:278:38
+        ConnectConfig @ github.com/jackc/pgx/v5/pgconn/pgconn.go:160:34
+        connectPreferred @ github.com/jackc/pgx/v5/pgconn/pgconn.go:265:28
+        connectOne @ github.com/jackc/pgx/v5/pgconn/pgconn.go:489:27
+        PgConn.scramAuth @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:44:27
+        newScramClient @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:197:47
+        Profile.String @ golang.org/x/text/secure/precis/profile.go:293:22
+        processString @ golang.org/x/text/secure/precis/profile.go:284:23
+        buffers.enforce @ golang.org/x/text/secure/precis/profile.go:161:20
+        buffers.apply @ golang.org/x/text/secure/precis/profile.go:134:34
+        Append @ golang.org/x/text/transform/transform.go:689:17
+        doAppend @ golang.org/x/text/transform/transform.go:696:33
+        Caser.Transform @ golang.org/x/text/cases/cases.go:62:22
+        simpleCaser.Transform @ golang.org/x/text/cases/map.go:214:21
+        ltLower @ golang.org/x/text/cases/map.go:595:27
+        Form.Properties @ golang.org/x/text/unicode/norm/forminfo.go:231:15
+      #2: for function golang.org/x/text/unicode/norm.Form.Span
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:703:17
+        retry @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:5835:18
+        retryLoop @ github.com/dbos-inc/dbos-transact-golang/dbos/retry.go:84:14
+        newSystemDatabase @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:795:36
+        createDatabaseIfNotExists @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:166:32
+        ConnectConfig @ github.com/jackc/pgx/v5/conn.go:160:16
+        connect @ github.com/jackc/pgx/v5/conn.go:278:38
+        ConnectConfig @ github.com/jackc/pgx/v5/pgconn/pgconn.go:160:34
+        connectPreferred @ github.com/jackc/pgx/v5/pgconn/pgconn.go:265:28
+        connectOne @ github.com/jackc/pgx/v5/pgconn/pgconn.go:489:27
+        PgConn.scramAuth @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:44:27
+        newScramClient @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:197:47
+        Profile.String @ golang.org/x/text/secure/precis/profile.go:293:22
+        processString @ golang.org/x/text/secure/precis/profile.go:284:23
+        buffers.enforce @ golang.org/x/text/secure/precis/profile.go:161:20
+        buffers.apply @ golang.org/x/text/secure/precis/profile.go:125:18
+        Form.Span @ golang.org/x/text/unicode/norm/normalize.go:274:15
+      #3: for function golang.org/x/text/unicode/norm.Form.Transform
+        main @ go-port/cmd/server/main.go:23:15
+        run @ go-port/cmd/server/main.go:83:23
+        Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:932:19
+        dbosContext.Launch @ github.com/dbos-inc/dbos-transact-golang/dbos/dbos.go:703:17
+        retry @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:5835:18
+        retryLoop @ github.com/dbos-inc/dbos-transact-golang/dbos/retry.go:84:14
+        newSystemDatabase @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:795:36
+        createDatabaseIfNotExists @ github.com/dbos-inc/dbos-transact-golang/dbos/system_database.go:166:32
+        ConnectConfig @ github.com/jackc/pgx/v5/conn.go:160:16
+        connect @ github.com/jackc/pgx/v5/conn.go:278:38
+        ConnectConfig @ github.com/jackc/pgx/v5/pgconn/pgconn.go:160:34
+        connectPreferred @ github.com/jackc/pgx/v5/pgconn/pgconn.go:265:28
+        connectOne @ github.com/jackc/pgx/v5/pgconn/pgconn.go:489:27
+        PgConn.scramAuth @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:44:27
+        newScramClient @ github.com/jackc/pgx/v5/pgconn/auth_scram.go:197:47
+        Profile.String @ golang.org/x/text/secure/precis/profile.go:293:22
+        processString @ golang.org/x/text/secure/precis/profile.go:284:23
+        buffers.enforce @ golang.org/x/text/secure/precis/profile.go:161:20
+        buffers.apply @ golang.org/x/text/secure/precis/profile.go:134:34
+        Append @ golang.org/x/text/transform/transform.go:689:17
+        doAppend @ golang.org/x/text/transform/transform.go:696:33
+        Form.Transform @ golang.org/x/text/unicode/norm/transform.go:20:15
+
+Vulnerability #8: GO-2026-5026
+    Invoking failure to reject ASCII-only Punycode-encoded labels in
+    golang.org/x/net/idna
+  More info: https://pkg.go.dev/vuln/GO-2026-5026
+  Standard library
+    Found in: net/http@go1.26.5
+    Fixed in: net/http@go1.26.6
+    Example traces found:
+      #1: for function net/http.Client.Do
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:138:24
+        Client.Do @ stdlib/src/net/http/client.go:603:18
+      #2: for function net/http/internal/http2.Transport.AddConn
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:138:24
+        Client.Do @ stdlib/src/net/http/client.go:604:13
+        Client.do @ stdlib/src/net/http/client.go:745:36
+        Client.send @ stdlib/src/net/http/client.go:187:30
+        send @ stdlib/src/net/http/client.go:266:26
+        Transport.RoundTrip @ stdlib/src/net/http/roundtrip.go:33:20
+        Transport.roundTrip @ stdlib/src/net/http/transport.go:743:22
+        Transport.decConnsPerHost @ stdlib/src/net/http/transport.go:1753:29
+        Transport.startDialConnForLocked @ stdlib/src/net/http/transport.go:1695:2
+        startDialConnForLocked @ stdlib/src/net/http/transport.go:1696:16
+        Transport.dialConnFor @ stdlib/src/net/http/transport.go:1715:23
+        Transport.dialConn @ stdlib/src/net/http/transport.go:2071:29
+        Transport.http2AddConn @ stdlib/src/net/http/http2.go:358:30
+        Transport.AddConn @ stdlib/src/net/http/internal/http2/transport.go:113:21
+      #3: for function net/http/internal/http2.Transport.RoundTrip
+        Client.PhotoInfo @ go-port/internal/flickr/client.go:355:18
+        Client.call @ go-port/internal/flickr/client.go:138:24
+        Client.Do @ stdlib/src/net/http/client.go:604:13
+        Client.do @ stdlib/src/net/http/client.go:745:36
+        Client.send @ stdlib/src/net/http/client.go:187:30
+        send @ stdlib/src/net/http/client.go:266:26
+        Transport.RoundTrip @ stdlib/src/net/http/roundtrip.go:33:20
+        Transport.roundTrip @ stdlib/src/net/http/transport.go:644:34
+        http2RoundTripper.RoundTrip @ stdlib/src/net/http/http2.go:438:29
+        http2RoundTrip @ stdlib/src/net/http/http2.go:321:18
+        Transport.RoundTrip @ stdlib/src/net/http/internal/http2/transport.go:379:21
+
+=== Package Results ===
+
+Vulnerability #1: GO-2026-6091
+    Fix Javascript regexp context tracking in html/template
+  More info: https://pkg.go.dev/vuln/GO-2026-6091
+  Standard library
+    Found in: html/template@go1.26.5
+    Fixed in: html/template@go1.26.6
+
+Vulnerability #2: GO-2026-5942
+    Parsing an invalid SVCB or HTTPS RR can panic in
+    golang.org/x/net/dns/dnsmessage
+  More info: https://pkg.go.dev/vuln/GO-2026-5942
+  Module: golang.org/x/net
+    Found in: golang.org/x/net@v0.55.0
+    Fixed in: golang.org/x/net@v0.56.0
+
+  Standard library
+    Found in: net@go1.26.5
+    Fixed in: net@go1.26.6
+
+=== Module Results ===
+
+Vulnerability #1: GO-2026-6355
+    Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh
+  More info: https://pkg.go.dev/vuln/GO-2026-6355
+  Module: golang.org/x/crypto
+    Found in: golang.org/x/crypto@v0.52.0
+    Fixed in: golang.org/x/crypto@v0.56.0
+
+Vulnerability #2: GO-2026-6354
+    Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh
+  More info: https://pkg.go.dev/vuln/GO-2026-6354
+  Module: golang.org/x/crypto
+    Found in: golang.org/x/crypto@v0.52.0
+    Fixed in: golang.org/x/crypto@v0.56.0
+
+Vulnerability #3: GO-2026-6303
+    Source-address critical option not enforced for non-public-key auth
+    callbacks in golang.org/x/crypto/ssh
+  More info: https://pkg.go.dev/vuln/GO-2026-6303
+  Module: golang.org/x/crypto
+    Found in: golang.org/x/crypto@v0.52.0
+    Fixed in: golang.org/x/crypto@v0.55.0
+
+Vulnerability #4: GO-2026-5932
+    The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design,
+    and has known security issues
+  More info: https://pkg.go.dev/vuln/GO-2026-5932
+  Module: golang.org/x/crypto
+    Found in: golang.org/x/crypto@v0.52.0
+    Fixed in: N/A
+
+Your code is affected by 8 vulnerabilities from 1 module and the Go standard library.
+This scan also found 2 vulnerabilities in packages you import and 4
+vulnerabilities in modules you require, but your code doesn't appear to call
+these vulnerabilities.

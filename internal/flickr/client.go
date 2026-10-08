@@ -64,7 +64,7 @@ func (c *Client) oauthRequest(ctx context.Context, endpoint string, params url.V
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Flickr OAuth request: %w", err)
+		return nil, fmt.Errorf("Flickr OAuth transport failed")
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))

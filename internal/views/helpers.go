@@ -1,6 +1,7 @@
 package views
 
 import (
+	"context"
 	"strings"
 
 	"go-port/internal/db"
@@ -35,4 +36,17 @@ func formatPostDate(post db.Post) string {
 		return ""
 	}
 	return post.PublishedAt.Time.Format("2006-01-02")
+}
+
+type publicOriginKey struct{}
+
+func WithPublicOrigin(ctx context.Context, origin string) context.Context {
+	return context.WithValue(ctx, publicOriginKey{}, origin)
+}
+func publicOrigin(ctx context.Context) string {
+	value, _ := ctx.Value(publicOriginKey{}).(string)
+	if value == "" {
+		return "/"
+	}
+	return value
 }

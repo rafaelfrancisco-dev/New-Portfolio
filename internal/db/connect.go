@@ -38,3 +38,17 @@ func Migrate(sqlDB *sql.DB) error {
 	}
 	return nil
 }
+
+// ConnectReadOnly enforces read-only access on every pooled connection.
+func ConnectReadOnly(path string) (*sql.DB, error) {
+	d, err := sql.Open("sqlite", "file:"+path+"?mode=ro&_pragma=query_only(1)&_pragma=busy_timeout(5000)")
+	if err != nil {
+		return nil, err
+	}
+	d.SetMaxOpenConns(8)
+	if err = d.Ping(); err != nil {
+		d.Close()
+		return nil, err
+	}
+	return d, nil
+}

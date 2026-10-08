@@ -41,6 +41,18 @@ func (q *Queries) CountAdminPosts(ctx context.Context) (CountAdminPostsRow, erro
 	return i, err
 }
 
+const countJournalPosts = `-- name: CountJournalPosts :one
+SELECT count(*) FROM posts WHERE status='published' AND published_at IS NOT NULL
+AND (?1='all' OR category=?1)
+`
+
+func (q *Queries) CountJournalPosts(ctx context.Context, categoryFilter interface{}) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJournalPosts, categoryFilter)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countMedia = `-- name: CountMedia :one
 SELECT COUNT(*) FROM media
 `
@@ -295,7 +307,7 @@ func (q *Queries) GetAdminPost(ctx context.Context, id int64) (Post, error) {
 }
 
 const getAdminSession = `-- name: GetAdminSession :one
-SELECT token_hash, csrf_token, created_at, expires_at FROM admin_sessions WHERE token_hash = ?
+SELECT token_hash, csrf_token, created_at, expires_at, credential_fingerprint, generation FROM admin_sessions WHERE token_hash = ?
 `
 
 func (q *Queries) GetAdminSession(ctx context.Context, tokenHash string) (AdminSession, error) {
@@ -306,6 +318,8 @@ func (q *Queries) GetAdminSession(ctx context.Context, tokenHash string) (AdminS
 		&i.CsrfToken,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.CredentialFingerprint,
+		&i.Generation,
 	)
 	return i, err
 }
@@ -493,6 +507,53 @@ type ListAdminPostsParams struct {
 
 func (q *Queries) ListAdminPosts(ctx context.Context, arg ListAdminPostsParams) ([]Post, error) {
 	rows, err := q.db.QueryContext(ctx, listAdminPosts, arg.StatusFilter, arg.CategoryFilter, arg.SearchText)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Category,
+			&i.Teaser,
+			&i.Lede,
+			&i.BodyMd,
+			&i.StoreUrl,
+			&i.Status,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJournalPage = `-- name: ListJournalPage :many
+SELECT id, slug, title, category, teaser, lede, body_md, store_url, status, published_at, created_at, updated_at FROM posts WHERE status='published' AND published_at IS NOT NULL
+AND (?1='all' OR category=?1)
+ORDER BY published_at DESC,id DESC LIMIT 20 OFFSET ?2
+`
+
+type ListJournalPageParams struct {
+	CategoryFilter interface{}
+	PageOffset     int64
+}
+
+func (q *Queries) ListJournalPage(ctx context.Context, arg ListJournalPageParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listJournalPage, arg.CategoryFilter, arg.PageOffset)
 	if err != nil {
 		return nil, err
 	}
