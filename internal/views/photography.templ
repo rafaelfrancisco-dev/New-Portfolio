@@ -112,7 +112,11 @@ templ exifRow(key string, value string) {
 	</div>
 }
 
-func photoDetailURL(id string, filter string) string { return "/photography/photos/" + url.PathEscape(id) + "?filter=" + url.QueryEscape(filter) }
+// photoDetailURL is the modal fragment's URL; modal=1 keeps it apart from the
+// full photo page in the CDN cache.
+func photoDetailURL(id string, filter string) string {
+	return "/photography/photos/" + url.PathEscape(id) + "?filter=" + url.QueryEscape(filter) + "&modal=1"
+}
 
 // photoImage is the large rendition of one photo: Flickr's 1024px size by
 // default, with the original offered to high-density screens.

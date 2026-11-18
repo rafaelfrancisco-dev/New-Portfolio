@@ -202,12 +202,18 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 
 	// Photo 1 (griffon vulture) is wildlife; the fragment should render its
 	// modal with the Flickr metadata panel.
-	modal := httptest.NewRequest(http.MethodGet, "http://example.com/photography/photos/1?filter=wildlife", nil)
-	modal.Header.Set("HX-Request", "true")
+	// The fragment is chosen by URL, never by header, so a CDN that caches
+	// by URL can't hand the full page to HTMX or the fragment to a browser.
+	modal := httptest.NewRequest(http.MethodGet, "http://example.com/photography/photos/1?filter=wildlife&modal=1", nil)
 	rec := ts.do(t, modal)
 	status, body = rec.Code, rec.Body.String()
-	if strings.Contains(body, "<html") {
-		t.Error("HTMX request should get the bare modal fragment")
+	if strings.Contains(body, "<html") || rec.Header().Get("X-Robots-Tag") != "noindex" {
+		t.Error("modal=1 should get the bare, noindex modal fragment")
+	}
+	withHeader := httptest.NewRequest(http.MethodGet, "http://example.com/photography/photos/1", nil)
+	withHeader.Header.Set("HX-Request", "true")
+	if !strings.Contains(ts.do(t, withHeader).Body.String(), "<html") {
+		t.Error("the plain photo URL should always be the full page")
 	}
 	if status != http.StatusOK {
 		t.Fatalf("modal status = %d, want 200", status)
@@ -217,7 +223,7 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 	}
 
 	// Photo 0 is a landscape, so it is not addressable under the wildlife filter.
-	status, _ = get(t, ts, "/photography/photos/0?filter=wildlife")
+	status, _ = get(t, ts, "/photography/photos/0?filter=wildlife&modal=1")
 	if status != http.StatusNotFound {
 		t.Fatalf("out-of-filter modal status = %d, want 404", status)
 	}

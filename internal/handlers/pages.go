@@ -152,9 +152,11 @@ func (rs Resource) gallery(c fuego.ContextNoBody, albumID string) (fuego.Templ, 
 	return views.PhotographyPage(gallery, settings), nil
 }
 
-// photoDetail returns the modal fragment for one gallery photo when HTMX asks
-// for it, and the full photo page otherwise; prev/next wrap around within the
-// current filter.
+// photoDetail returns the modal fragment for one gallery photo when the URL
+// asks for it with modal=1, and the full photo page otherwise; prev/next wrap
+// around within the current filter. The switch is a query parameter rather
+// than the HX-Request header because the CDN caches HTML by URL and ignores
+// Vary, so one URL must always produce the same document.
 func (rs Resource) photoDetail(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if rs.Flickr == nil {
 		return nil, fuego.NotFoundError{Detail: "photo not found"}
@@ -166,7 +168,8 @@ func (rs Resource) photoDetail(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "load Flickr photo")
 	}
-	if c.Request().Header.Get("HX-Request") == "true" {
+	if c.QueryParam("modal") == "1" {
+		c.Response().Header().Set("X-Robots-Tag", "noindex")
 		return views.PhotoDetail(photo, prev, next, filter), nil
 	}
 	settings, err := rs.siteSettings(c.Context())
