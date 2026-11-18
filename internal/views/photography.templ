@@ -3,22 +3,29 @@ package views
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"go-port/internal/db"
 	"go-port/internal/flickr"
 )
 
 templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
-	@Layout(settings, settings.DisplayName + " - Photography", "~/photography", "photography") {
+	@Layout(settings, photographyMeta(ctx, settings, gallery), "~/photography", "photography") {
 		<div class="px-6 md:px-11 pt-12 pb-[26px] flex flex-col gap-[14px]">
 			@SectionLabel("02 - PHOTOGRAPHY")
 			<div class="flex justify-between items-baseline gap-5 flex-wrap">
-				<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">Photography</h1>
+				<h1 class="m-0 text-[38px] font-semibold tracking-[-.01em]">
+					if album, ok := currentAlbum(gallery); ok {
+						{ album.Title }
+					} else {
+						Photography
+					}
+				</h1>
 				if gallery.Available {
 					<div class="flex gap-2 font-mono font-medium text-[12.5px] flex-wrap">
-						@galleryFilter("all", "all", gallery.Filter)
+						@galleryFilter("/photography", "all", gallery.Filter == "all")
 						for _, album := range gallery.Albums {
-							@galleryFilter(album.ID, album.Title, gallery.Filter)
+							@galleryFilter("/photography/"+url.PathEscape(album.Slug), album.Title, gallery.Filter == album.ID)
 						}
 					</div>
 				}
@@ -35,8 +42,8 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 		} else {
 			<div id="masonry-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[14px] px-6 md:px-11 pt-2 pb-11 items-start">
 				for _, ph := range gallery.Photos {
-					<a href={ templ.SafeURL(ph.PageURL) } style={ vtPhoto(ph) } hx-get={ photoDetailURL(ph.ID, gallery.Filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="relative overflow-hidden border border-line no-underline block bg-tile hover:opacity-85">
-						<img src={ templ.SafeURL(ph.SmallURL) } srcset={ ph.SmallURL + " 640w, " + ph.LargeURL + " 1600w" } sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw" width={ fmt.Sprint(ph.Width) } height={ fmt.Sprint(ph.Height) } alt={ ph.Title } loading="lazy" class="block w-full h-auto"/>
+					<a href={ templ.SafeURL(photoPath(ph.ID)) } style={ vtPhoto(ph) } hx-get={ photoDetailURL(ph.ID, gallery.Filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="relative overflow-hidden border border-line no-underline block bg-tile hover:opacity-85">
+						<img src={ templ.SafeURL(ph.SmallURL) } srcset={ gridSrcset(ph) } sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw" width={ fmt.Sprint(ph.Width) } height={ fmt.Sprint(ph.Height) } alt={ photoAlt(ph) } loading="lazy" class="block w-full h-auto"/>
 						<span class="absolute left-0 right-0 bottom-0 py-2.5 px-3 bg-[linear-gradient(transparent,rgba(12,12,10,.72))] font-mono text-[11.5px] text-[#cbc6ba]">{ ph.Title }</span>
 					</a>
 				}
@@ -44,9 +51,9 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 			
 			if gallery.TotalPages > 1 {
 				<div class="flex justify-between items-center px-6 md:px-11 pb-11 font-mono font-medium text-[12.5px]">
-					@pageLink("← Newer", gallery.Page-1, gallery.Filter, gallery.Page > 1)
+					@pageLink("← Newer", galleryPagePath(gallery, gallery.Page-1), gallery.Page > 1)
 					<span class="text-faint">Page { fmt.Sprint(gallery.Page) } of { fmt.Sprint(gallery.TotalPages) }</span>
-					@pageLink("Older →", gallery.Page+1, gallery.Filter, gallery.Page < gallery.TotalPages)
+					@pageLink("Older →", galleryPagePath(gallery, gallery.Page+1), gallery.Page < gallery.TotalPages)
 				</div>
 			}
 		}
@@ -55,13 +62,13 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 	}
 }
 
-templ galleryFilter(key string, label string, current string) {
-	<a href={ templ.SafeURL("/photography?filter=" + url.QueryEscape(key)) } class={ "py-[7px] px-3 border rounded no-underline hover:opacity-85", templ.KV("border-ink text-ink", key == current), templ.KV("border-line-strong text-muted", key != current) }>{ label }</a>
+templ galleryFilter(href string, label string, active bool) {
+	<a href={ templ.SafeURL(href) } class={ "py-[7px] px-3 border rounded no-underline hover:opacity-85", templ.KV("border-ink text-ink", active), templ.KV("border-line-strong text-muted", !active) }>{ label }</a>
 }
 
-templ pageLink(label string, page int, filter string, enabled bool) {
+templ pageLink(label string, href string, enabled bool) {
 	if enabled {
-		<a href={ templ.SafeURL(fmt.Sprintf("/photography?filter=%s&page=%d", url.QueryEscape(filter), page)) } class="text-ink no-underline hover:opacity-85">{ label }</a>
+		<a href={ templ.SafeURL(href) } class="text-ink no-underline hover:opacity-85">{ label }</a>
 	} else {
 		<span class="text-faint">{ label }</span>
 	}
@@ -71,26 +78,20 @@ templ PhotoDetail(ph flickr.Photo, prev string, next string, filter string) {
 	<div data-close-photo class="fixed inset-0 z-[60] bg-[rgba(9,9,8,.93)] flex items-center justify-center p-3 md:p-7">
 		<div data-photo-content class="w-full md:w-auto md:max-w-[1200px] max-h-full overflow-auto flex flex-col md:flex-row bg-bg border border-line rounded-lg">
 			<div class="relative bg-panel min-h-[240px] flex items-center justify-center">
-				<img src={ templ.SafeURL(ph.LargeURL) } width={ fmt.Sprint(ph.Width) } height={ fmt.Sprint(ph.Height) } alt={ ph.Title } class="block max-w-full max-h-[82vh] w-auto h-auto"/>
+				@photoImage(ph, "block max-w-full max-h-[82vh] w-auto h-auto")
 			</div>
 			<aside class="pt-6 px-6 pb-[26px] flex flex-col gap-5 border-l border-line md:w-[340px] md:shrink-0">
 				<div class="flex justify-between items-baseline gap-3"><span class="font-mono font-medium text-xs tracking-[.1em] text-faint">PHOTO</span><button data-close-photo class="font-mono font-semibold text-xs text-muted hover:opacity-85">✕ esc</button></div>
 				<div class="flex flex-col gap-2">
-					<h2 class="m-0 text-xl font-semibold leading-[1.3]">{ ph.Title }</h2>
+					<h2 class="m-0 text-xl font-semibold leading-[1.3]"><a href={ templ.SafeURL(photoPath(ph.ID)) } class="no-underline text-inherit hover:opacity-85">{ ph.Title }</a></h2>
+					if photoCaption(ph) != "" {
+						<p class="m-0 font-mono text-[12.5px] text-muted">{ photoCaption(ph) }</p>
+					}
 					if ph.Description != "" {
 						<p class="m-0 text-[13px] leading-[1.6] text-faint text-pretty whitespace-pre-line">{ ph.Description }</p>
 					}
 				</div>
-				<div class="flex flex-col gap-2"><span class="font-mono font-medium text-xs tracking-[.1em] text-faint">EXIF</span><div class="flex flex-col">
-					@exifRow("Camera", ph.Camera)
-					@exifRow("Lens", ph.Lens)
-					@exifRow("Exposure", ph.Exposure)
-					@exifRow("Aperture", ph.Aperture)
-					@exifRow("ISO", ph.ISO)
-					@exifRow("Focal len", ph.FocalLength)
-					@exifRow("Taken", ph.TakenAt)
-					@exifRow("Location", ph.Location)
-				</div></div>
+				@exifTable(ph)
 				<a href={ templ.SafeURL(ph.PageURL) } target="_blank" rel="noopener noreferrer" class="font-mono text-xs text-ink">View this photo on Flickr ↗</a>
 				<div class="mt-auto flex justify-between gap-3 font-mono font-semibold text-xs"><a href="#" hx-get={ photoDetailURL(prev, filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="text-ink no-underline hover:opacity-85">← prev</a><a href="#" hx-get={ photoDetailURL(next, filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="text-ink no-underline hover:opacity-85">next →</a></div>
 			</aside>
@@ -112,3 +113,76 @@ templ exifRow(key string, value string) {
 }
 
 func photoDetailURL(id string, filter string) string { return "/photography/photos/" + url.PathEscape(id) + "?filter=" + url.QueryEscape(filter) }
+
+// photoImage is the large rendition of one photo: Flickr's 1024px size by
+// default, with the original offered to high-density screens.
+templ photoImage(ph flickr.Photo, class string) {
+	<img
+		src={ templ.SafeURL(flickrSized(ph.SmallURL, "b")) }
+		srcset={ flickrSized(ph.SmallURL, "b") + " 1024w, " + ph.LargeURL + " " + strconv.Itoa(max(ph.Width, 1025)) + "w" }
+		sizes="(min-width: 768px) 860px, 100vw"
+		width={ fmt.Sprint(ph.Width) }
+		height={ fmt.Sprint(ph.Height) }
+		alt={ photoAlt(ph) }
+		class={ class }
+	/>
+}
+
+templ exifTable(ph flickr.Photo) {
+	<div class="flex flex-col gap-2">
+		<span class="font-mono font-medium text-xs tracking-[.1em] text-faint">EXIF</span>
+		<div class="flex flex-col">
+			@exifRow("Camera", ph.Camera)
+			@exifRow("Lens", ph.Lens)
+			@exifRow("Exposure", ph.Exposure)
+			@exifRow("Aperture", ph.Aperture)
+			@exifRow("ISO", ph.ISO)
+			@exifRow("Focal len", ph.FocalLength)
+			@exifRow("Taken", ph.TakenAt)
+			@exifRow("Location", ph.Location)
+		</div>
+	</div>
+}
+
+// PhotoPage is the crawlable page for one photo, served when the photo URL is
+// opened directly rather than through the gallery modal.
+templ PhotoPage(ph flickr.Photo, prev string, next string, filter string, settings db.SiteSetting) {
+	@Layout(settings, photoMeta(ctx, settings, ph), "~/photography/"+ph.ID, "photography") {
+		<div class="grid grid-cols-1 md:grid-cols-[1fr_340px]">
+			<div class="bg-panel flex items-center justify-center p-3 md:p-7 md:border-r border-line">
+				@photoImage(ph, "block max-w-full max-h-[86vh] w-auto h-auto")
+			</div>
+			<aside class="pt-8 px-6 pb-[26px] flex flex-col gap-5">
+				@SectionLabel("02 - PHOTOGRAPHY")
+				<div class="flex flex-col gap-2">
+					<h1 class="m-0 text-2xl font-semibold leading-[1.3]">{ ph.Title }</h1>
+					if photoCaption(ph) != "" {
+						<p class="m-0 font-mono text-[12.5px] text-muted">{ photoCaption(ph) }</p>
+					}
+					if ph.Description != "" {
+						<p class="m-0 text-[14px] leading-[1.6] text-muted text-pretty whitespace-pre-line">{ ph.Description }</p>
+					}
+				</div>
+				@exifTable(ph)
+				<p class="m-0 text-[13.5px] leading-[1.6] text-faint">Most gallery photos are available as A3 and A2 prints. <a href="/about#contact" class="text-ink">Email me</a>{ " if you want one." }</p>
+				if ph.PageURL != "" {
+					<a href={ templ.SafeURL(ph.PageURL) } rel="noopener noreferrer" class="font-mono text-xs text-ink">View this photo on Flickr ↗</a>
+				}
+				<div class="mt-auto flex justify-between gap-3 font-mono font-semibold text-xs">
+					<a href={ templ.SafeURL(photoNavURL(prev, filter)) } class="text-ink no-underline hover:opacity-85">← prev</a>
+					<a href="/photography" class="text-muted no-underline hover:opacity-85">all photos</a>
+					<a href={ templ.SafeURL(photoNavURL(next, filter)) } class="text-ink no-underline hover:opacity-85">next →</a>
+				</div>
+			</aside>
+		</div>
+	}
+}
+
+// photoNavURL keeps the album context for prev/next on the photo page; the
+// canonical tag still points at the unfiltered URL.
+func photoNavURL(id string, filter string) string {
+	if filter == "" || filter == "all" {
+		return photoPath(id)
+	}
+	return photoPath(id) + "?filter=" + url.QueryEscape(filter)
+}

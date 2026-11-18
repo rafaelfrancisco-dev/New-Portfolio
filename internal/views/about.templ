@@ -3,7 +3,7 @@ package views
 import "go-port/internal/db"
 
 templ AboutPage(settings db.SiteSetting) {
-	@Layout(settings, settings.DisplayName + " - About", "~/about", "about") {
+	@Layout(settings, aboutMeta(ctx, settings), "~/about", "about") {
 		<div class="grid grid-cols-1 md:grid-cols-[1fr_340px]">
 			<div class="px-6 md:px-11 py-12 md:border-r border-line flex flex-col gap-[26px]">
 				<div class="flex flex-col gap-[14px]">
@@ -29,7 +29,7 @@ templ AboutPage(settings db.SiteSetting) {
 					</div>
 				</div>
 			</div>
-			<aside class="flex flex-col">
+			<aside id="contact" class="flex flex-col">
 				<div class="py-12 px-6 md:px-[34px] flex flex-col gap-[18px]">
 					@SectionLabel("CONTACT")
 					<a href={ templ.SafeURL("mailto:" + settings.ContactEmail) } class="font-mono font-semibold text-sm text-ink no-underline hover:opacity-85 break-all">{ settings.ContactEmail }</a>

@@ -1,24 +1,49 @@
 package views
 
-import "go-port/internal/db"
+import (
+	"time"
+
+	"go-port/internal/db"
+)
 
 // Layout wraps every page: light/dark shell (follows the OS), terminal-style header with the current
 // "path", nav with the active section highlighted, and the contact footer.
-templ Layout(settings db.SiteSetting, title string, path string, active string) {
+templ Layout(settings db.SiteSetting, meta Meta, path string, active string) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<meta name="color-scheme" content="light dark"/>
-			<title>{ title }</title>
-			<meta name="description" content={ settings.SiteDescription }/>
-			<meta property="og:type" content="website"/>
-			<meta property="og:title" content={ title }/>
-			<meta property="og:description" content={ settings.SiteDescription }/>
-			<meta name="twitter:card" content="summary"/>
-			<meta name="twitter:title" content={ title }/>
-			<meta name="twitter:description" content={ settings.SiteDescription }/>
+			<title>{ meta.Title }</title>
+			<meta name="description" content={ meta.description(settings) }/>
+			if meta.NoIndex {
+				<meta name="robots" content="noindex,follow"/>
+			}
+			if meta.Path != "" {
+				<link rel="canonical" href={ templ.SafeURL(absURL(ctx, meta.Path)) }/>
+				<meta property="og:url" content={ absURL(ctx, meta.Path) }/>
+			}
+			<meta property="og:site_name" content={ settings.DisplayName }/>
+			<meta property="og:type" content={ meta.ogType() }/>
+			<meta property="og:title" content={ meta.Title }/>
+			<meta property="og:description" content={ meta.description(settings) }/>
+			if meta.Image != "" {
+				<meta property="og:image" content={ meta.Image }/>
+				<meta property="og:image:alt" content={ meta.ImageAlt }/>
+				<meta name="twitter:card" content="summary_large_image"/>
+				<meta name="twitter:image" content={ meta.Image }/>
+			} else {
+				<meta name="twitter:card" content="summary"/>
+			}
+			<meta name="twitter:title" content={ meta.Title }/>
+			<meta name="twitter:description" content={ meta.description(settings) }/>
+			if !meta.Published.IsZero() {
+				<meta property="article:published_time" content={ meta.Published.UTC().Format(time.RFC3339) }/>
+			}
+			for _, data := range meta.JSONLD {
+				@templ.JSONScript("", data).WithType("application/ld+json")
+			}
 			<link rel="icon" type="image/svg+xml" href="/static/favicon.svg"/>
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			<link rel="alternate" type="application/rss+xml" title={ settings.DisplayName + " - Journal" } href="/journal/feed.xml"/>

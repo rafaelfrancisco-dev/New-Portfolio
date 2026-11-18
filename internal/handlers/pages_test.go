@@ -2,12 +2,14 @@ package handlers_test
 
 import (
 	"database/sql"
+	"encoding/json"
 	"encoding/xml"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -185,7 +187,12 @@ func TestJournalCategoryFilter(t *testing.T) {
 func TestPhotographyFilterAndModal(t *testing.T) {
 	ts := newTestServer(t)
 
-	status, body := get(t, ts, "/photography?filter=wildlife")
+	resp := ts.do(t, httptest.NewRequest(http.MethodGet, "http://example.com/photography?filter=wildlife&page=2", nil)).Result()
+	if resp.StatusCode != http.StatusMovedPermanently || resp.Header.Get("Location") != "/photography/wildlife?page=2" {
+		t.Fatalf("legacy filter = %d %q, want 301 to /photography/wildlife?page=2", resp.StatusCode, resp.Header.Get("Location"))
+	}
+
+	status, body := get(t, ts, "/photography/wildlife")
 	if status != http.StatusOK {
 		t.Fatalf("status = %d, want 200", status)
 	}
@@ -195,7 +202,13 @@ func TestPhotographyFilterAndModal(t *testing.T) {
 
 	// Photo 1 (griffon vulture) is wildlife; the fragment should render its
 	// modal with the Flickr metadata panel.
-	status, body = get(t, ts, "/photography/photos/1?filter=wildlife")
+	modal := httptest.NewRequest(http.MethodGet, "http://example.com/photography/photos/1?filter=wildlife", nil)
+	modal.Header.Set("HX-Request", "true")
+	rec := ts.do(t, modal)
+	status, body = rec.Code, rec.Body.String()
+	if strings.Contains(body, "<html") {
+		t.Error("HTMX request should get the bare modal fragment")
+	}
 	if status != http.StatusOK {
 		t.Fatalf("modal status = %d, want 200", status)
 	}
@@ -263,5 +276,109 @@ func TestHealthz(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestUnknownAlbumNotFound(t *testing.T) {
+	ts := newTestServer(t)
+	if status, _ := get(t, ts, "/photography/no-such-album"); status != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", status)
+	}
+}
+
+func TestPhotoPage(t *testing.T) {
+	ts := newTestServer(t)
+	status, body := get(t, ts, "/photography/photos/1?filter=wildlife")
+	if status != http.StatusOK {
+		t.Fatalf("status = %d, want 200", status)
+	}
+	for _, want := range []string{"<html", "<h1", "griffon vulture, Douro", "EXIF",
+		`<link rel="canonical" href="http://example.com/photography/photos/1">`,
+		`"@type":"ImageObject"`, `og:image`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("photo page missing %q", want)
+		}
+	}
+}
+
+// TestPageMetadata checks every public page has its own title, description
+// and canonical URL, and that each JSON-LD block is valid JSON.
+func TestPageMetadata(t *testing.T) {
+	ts := newTestServer(t)
+	titleRe := regexp.MustCompile(`<title>([^<]*)</title>`)
+	descRe := regexp.MustCompile(`<meta name="description" content="([^"]*)">`)
+	canonRe := regexp.MustCompile(`<link rel="canonical" href="([^"]*)">`)
+	ldRe := regexp.MustCompile(`(?s)<script type="application/ld\+json">(.*?)</script>`)
+	titles, descs := map[string]string{}, map[string]string{}
+	for _, path := range []string{"/", "/software", "/photography", "/photography/wildlife", "/journal", "/journal/photo-location-recorder", "/lightroom", "/about", "/photography/photos/2"} {
+		status, body := get(t, ts, path)
+		if status != http.StatusOK {
+			t.Fatalf("GET %s = %d", path, status)
+		}
+		title, desc, canon := titleRe.FindStringSubmatch(body), descRe.FindStringSubmatch(body), canonRe.FindStringSubmatch(body)
+		if title == nil || desc == nil || canon == nil {
+			t.Fatalf("GET %s missing title, description or canonical", path)
+		}
+		if prev, dup := titles[title[1]]; dup {
+			t.Errorf("%s and %s share the title %q", prev, path, title[1])
+		}
+		if prev, dup := descs[desc[1]]; dup {
+			t.Errorf("%s and %s share the description %q", prev, path, desc[1])
+		}
+		titles[title[1]], descs[desc[1]] = path, path
+		if want := "http://example.com" + path; canon[1] != want {
+			t.Errorf("GET %s canonical = %q, want %q", path, canon[1], want)
+		}
+		blocks := ldRe.FindAllStringSubmatch(body, -1)
+		if len(blocks) == 0 && path != "/journal" {
+			t.Errorf("GET %s has no JSON-LD", path)
+		}
+		for _, b := range blocks {
+			var v map[string]any
+			if err := json.Unmarshal([]byte(b[1]), &v); err != nil || v["@context"] != "https://schema.org" {
+				t.Errorf("GET %s invalid JSON-LD %q: %v", path, b[1], err)
+			}
+		}
+	}
+
+	_, body := get(t, ts, "/journal?filter=software")
+	if !strings.Contains(body, `<meta name="robots" content="noindex,follow">`) {
+		t.Error("filtered journal should be noindex")
+	}
+}
+
+func TestSitemapAndRobots(t *testing.T) {
+	ts := newTestServer(t)
+	status, body := get(t, ts, "/sitemap.xml")
+	if status != http.StatusOK {
+		t.Fatalf("sitemap status = %d", status)
+	}
+	var set struct {
+		URLs []struct {
+			Loc    string `xml:"loc"`
+			Images []struct {
+				Loc string `xml:"loc"`
+			} `xml:"image"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal([]byte(body), &set); err != nil {
+		t.Fatalf("sitemap is not valid XML: %v", err)
+	}
+	locs := map[string]int{}
+	for _, u := range set.URLs {
+		locs[u.Loc] = len(u.Images)
+	}
+	for _, want := range []string{"http://example.com/", "http://example.com/journal/photo-location-recorder", "http://example.com/photography/wildlife", "http://example.com/photography/photos/3"} {
+		if _, ok := locs[want]; !ok {
+			t.Errorf("sitemap missing %s", want)
+		}
+	}
+	if locs["http://example.com/photography/photos/3"] != 1 {
+		t.Error("photo entries should carry an image:image")
+	}
+
+	status, body = get(t, ts, "/robots.txt")
+	if status != http.StatusOK || !strings.Contains(body, "Disallow: /admin") || !strings.Contains(body, "Sitemap: http://example.com/sitemap.xml") {
+		t.Fatalf("robots.txt = %d %q", status, body)
 	}
 }

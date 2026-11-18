@@ -37,7 +37,12 @@ func RegisterPublic(s *fuego.Server, rs Resource) {
 	)
 	fuego.Get(s, "/photography", rs.photographyPage,
 		option.Summary("Photography gallery"),
-		option.Query("filter", "Gallery filter: all or an opaque Flickr album ID"),
+		option.Query("filter", "Legacy album filter; redirects to /photography/{album}"),
+		option.Query("page", "Page number, 1-indexed"),
+		option.Tags("pages"),
+	)
+	fuego.Get(s, "/photography/{album}", rs.photographyAlbumPage,
+		option.Summary("Photography album"),
 		option.Query("page", "Page number, 1-indexed"),
 		option.Tags("pages"),
 	)
@@ -59,14 +64,16 @@ func RegisterPublic(s *fuego.Server, rs Resource) {
 		option.Tags("pages"),
 	)
 
-	// HTMX fragments
+	// Photo page, or the modal fragment for HTMX requests
 	fuego.Get(s, "/photography/photos/{photoID}", rs.photoDetail,
-		option.Summary("Photo detail modal fragment"),
+		option.Summary("Photo page or modal fragment"),
 		option.Query("filter", "Gallery filter the modal navigates within"),
 		option.Hide(),
 	)
 
-	// Feeds
+	// Feeds and crawler files
+	fuego.GetStd(s, "/sitemap.xml", rs.sitemap, option.Summary("XML sitemap"), option.Tags("feeds"))
+	fuego.GetStd(s, "/robots.txt", rs.robots, option.Summary("robots.txt"), option.Tags("feeds"))
 	fuego.GetStd(s, "/journal/feed.xml", rs.journalFeed,
 		option.Summary("Journal RSS feed"),
 		option.Tags("feeds"),

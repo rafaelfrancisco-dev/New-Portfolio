@@ -87,7 +87,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português - native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English - C2</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español - B1</span></div></div></div><aside class=\"flex flex-col\"><div class=\"py-12 px-6 md:px-[34px] flex flex-col gap-[18px]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português - native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English - C2</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español - B1</span></div></div></div><aside id=\"contact\" class=\"flex flex-col\"><div class=\"py-12 px-6 md:px-[34px] flex flex-col gap-[18px]\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -227,7 +227,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" - About", "~/about", "about").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, aboutMeta(ctx, settings), "~/about", "about").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

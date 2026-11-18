@@ -163,6 +163,9 @@ func (c *Client) call(ctx context.Context, token Token, method string, params ur
 type Album struct {
 	ID, Title, Description string
 	Position               int
+	// Slug is the album's path segment under /photography. It is derived
+	// from the title when albums are read, never stored.
+	Slug string
 }
 type Photo struct {
 	ID, Title, Description, PageURL, SmallURL, LargeURL, TakenAt, Location string
@@ -261,7 +264,7 @@ func (c *Client) Albums(ctx context.Context, token Token, userID string) ([]Albu
 			return nil, err
 		}
 		for _, a := range response.Photosets.Items {
-			out = append(out, Album{a.ID, a.Title.Content, a.Description.Content, len(out)})
+			out = append(out, Album{ID: a.ID, Title: a.Title.Content, Description: a.Description.Content, Position: len(out)})
 		}
 		if page >= int(response.Photosets.Pages) || response.Photosets.Pages == 0 {
 			return out, nil

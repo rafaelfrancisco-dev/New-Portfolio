@@ -10,7 +10,7 @@ import (
 // Markdown from the trusted posts table. older/newer may be nil at the ends
 // of the archive.
 templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post, newer *db.Post, settings db.SiteSetting) {
-	@Layout(settings, settings.DisplayName + " - "+post.Title, "~/journal/"+post.Slug, "journal") {
+	@Layout(settings, articleMeta(ctx, settings, post), "~/journal/"+post.Slug, "journal") {
 		<article class="max-w-[720px] mx-auto px-6 pt-[52px] pb-[60px] flex flex-col gap-[22px]">
 			<div class="flex gap-[14px] font-mono text-[12.5px] text-faint">
 				<span>{ formatPostDate(post) }</span>
@@ -35,6 +35,12 @@ templ ArticlePage(post db.Post, bodyHTML string, readMinutes int, older *db.Post
 						<a href={ templ.SafeURL("/journal/" + older.Slug) } class="no-underline text-inherit hover:opacity-85">← older post</a>
 					}
 					<a href="/journal" class="no-underline text-inherit hover:opacity-85">all posts</a>
+					switch post.Category {
+						case "photography":
+							<a href="/photography" class="no-underline text-inherit hover:opacity-85">photo gallery</a>
+						case "software":
+							<a href="/software" class="no-underline text-inherit hover:opacity-85">all projects</a>
+					}
 					if newer != nil {
 						<a href={ templ.SafeURL("/journal/" + newer.Slug) } class="no-underline text-inherit hover:opacity-85">newer post →</a>
 					}

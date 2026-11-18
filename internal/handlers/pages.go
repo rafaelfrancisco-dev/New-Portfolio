@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -90,6 +91,49 @@ func (rs Resource) aboutPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 }
 
 func (rs Resource) photographyPage(c fuego.ContextNoBody) (fuego.Templ, error) {
+	// Old ?filter=<album ID> links move to the album's own URL.
+	if filter := c.QueryParam("filter"); filter != "" && rs.Flickr != nil {
+		albums, err := rs.Flickr.Store.Albums(c.Context(), time.Now().UTC())
+		if err != nil {
+			return nil, errors.Wrap(err, "list Flickr albums")
+		}
+		target := "/photography"
+		for _, a := range albums {
+			if a.ID == filter {
+				target += "/" + url.PathEscape(a.Slug)
+			}
+		}
+		if page, err := strconv.Atoi(c.QueryParam("page")); err == nil && page > 1 {
+			target += "?page=" + strconv.Itoa(page)
+		}
+		_, _ = c.Redirect(http.StatusMovedPermanently, target)
+		return nil, nil
+	}
+	return rs.gallery(c, "all")
+}
+
+// photographyAlbumPage is one album of the gallery, addressed by its slug.
+func (rs Resource) photographyAlbumPage(c fuego.ContextNoBody) (fuego.Templ, error) {
+	if rs.Flickr == nil {
+		return nil, fuego.NotFoundError{Detail: "album not found"}
+	}
+	albums, err := rs.Flickr.Store.Albums(c.Context(), time.Now().UTC())
+	if err != nil {
+		return nil, errors.Wrap(err, "list Flickr albums")
+	}
+	if albums == nil {
+		// Gallery is stale or never synced: show the unavailable page, not a 404.
+		return rs.gallery(c, "all")
+	}
+	for _, a := range albums {
+		if a.Slug == c.PathParam("album") {
+			return rs.gallery(c, a.ID)
+		}
+	}
+	return nil, fuego.NotFoundError{Detail: "album not found"}
+}
+
+func (rs Resource) gallery(c fuego.ContextNoBody, albumID string) (fuego.Templ, error) {
 	settings, err := rs.siteSettings(c.Context())
 	if err != nil {
 		return nil, err
@@ -101,15 +145,16 @@ func (rs Resource) photographyPage(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil || page < 1 {
 		page = 1
 	}
-	gallery, err := rs.Flickr.Store.Gallery(c.Context(), c.QueryParam("filter"), time.Now().UTC(), page)
+	gallery, err := rs.Flickr.Store.Gallery(c.Context(), albumID, time.Now().UTC(), page)
 	if err != nil {
 		return nil, errors.Wrap(err, "load Flickr gallery")
 	}
 	return views.PhotographyPage(gallery, settings), nil
 }
 
-// photoDetail returns the modal fragment for one gallery photo; prev/next
-// wrap around within the current filter.
+// photoDetail returns the modal fragment for one gallery photo when HTMX asks
+// for it, and the full photo page otherwise; prev/next wrap around within the
+// current filter.
 func (rs Resource) photoDetail(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if rs.Flickr == nil {
 		return nil, fuego.NotFoundError{Detail: "photo not found"}
@@ -121,7 +166,14 @@ func (rs Resource) photoDetail(c fuego.ContextNoBody) (fuego.Templ, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "load Flickr photo")
 	}
-	return views.PhotoDetail(photo, prev, next, filter), nil
+	if c.Request().Header.Get("HX-Request") == "true" {
+		return views.PhotoDetail(photo, prev, next, filter), nil
+	}
+	settings, err := rs.siteSettings(c.Context())
+	if err != nil {
+		return nil, err
+	}
+	return views.PhotoPage(photo, prev, next, filter, settings), nil
 }
 
 func (rs Resource) journalPage(c fuego.ContextNoBody) (fuego.Templ, error) {

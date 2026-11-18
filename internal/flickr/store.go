@@ -311,6 +311,7 @@ func (s Store) Gallery(ctx context.Context, filter string, now time.Time, page i
 	if err != nil {
 		return result, err
 	}
+	assignSlugs(result.Albums)
 	where, args := photoWhere(snapshot, filter)
 	if err = s.DB.QueryRowContext(ctx, `SELECT count(*)`+where, args...).Scan(&result.TotalPhotos); err != nil {
 		return result, err
@@ -398,4 +399,101 @@ func safeFlickrURL(raw string, image bool) bool {
 		return host == "staticflickr.com" || strings.HasSuffix(host, ".staticflickr.com")
 	}
 	return host == "www.flickr.com" || host == "flickr.com"
+}
+
+// Albums lists the active snapshot's albums in display order, with slugs.
+// It returns nil when there is no fresh snapshot.
+func (s Store) Albums(ctx context.Context, now time.Time) ([]Album, error) {
+	snapshot, _, err := s.snapshot(ctx, now)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.DB.QueryContext(ctx, `SELECT album_id,title,description,position FROM flickr_albums WHERE snapshot_id=? ORDER BY position`, snapshot)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var albums []Album
+	for rows.Next() {
+		var a Album
+		if err := rows.Scan(&a.ID, &a.Title, &a.Description, &a.Position); err != nil {
+			return nil, err
+		}
+		albums = append(albums, a)
+	}
+	assignSlugs(albums)
+	return albums, rows.Err()
+}
+
+// AllPhotos lists every photo in the active snapshot, newest first, for the
+// sitemap. It returns nil when there is no fresh snapshot.
+func (s Store) AllPhotos(ctx context.Context, now time.Time) ([]Photo, error) {
+	snapshot, _, err := s.snapshot(ctx, now)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	where, args := photoWhere(snapshot, "all")
+	rows, err := s.DB.QueryContext(ctx, `SELECT `+photoColumns+where+` ORDER BY p.taken_at DESC,p.photo_id DESC`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var photos []Photo
+	for rows.Next() {
+		p, err := scanPhoto(rows)
+		if err != nil {
+			return nil, err
+		}
+		photos = append(photos, p)
+	}
+	return photos, rows.Err()
+}
+
+var accentFolder = strings.NewReplacer(
+	"á", "a", "à", "a", "â", "a", "ã", "a", "ä", "a",
+	"é", "e", "è", "e", "ê", "e", "ë", "e",
+	"í", "i", "ì", "i", "î", "i", "ï", "i",
+	"ó", "o", "ò", "o", "ô", "o", "õ", "o", "ö", "o",
+	"ú", "u", "ù", "u", "û", "u", "ü", "u",
+	"ç", "c", "ñ", "n",
+)
+
+// Slugify turns a title into a lowercase, hyphenated URL segment, folding
+// Portuguese and Spanish accents to plain letters.
+func Slugify(title string) string {
+	folded := accentFolder.Replace(strings.ToLower(title))
+	var b strings.Builder
+	hyphen := false
+	for _, r := range folded {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			hyphen = false
+		} else if !hyphen && b.Len() > 0 {
+			b.WriteByte('-')
+			hyphen = true
+		}
+	}
+	return strings.TrimSuffix(b.String(), "-")
+}
+
+// assignSlugs gives every album a unique slug. Titles that slugify to nothing
+// or collide with another album fall back to "slug-albumID".
+func assignSlugs(albums []Album) {
+	count := map[string]int{}
+	for _, a := range albums {
+		count[Slugify(a.Title)]++
+	}
+	for i := range albums {
+		slug := Slugify(albums[i].Title)
+		if slug == "" || count[slug] > 1 {
+			slug = strings.Trim(slug+"-"+Slugify(albums[i].ID), "-")
+		}
+		albums[i].Slug = slug
+	}
 }
