@@ -37,7 +37,7 @@ templ PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) {
 				for _, ph := range gallery.Photos {
 					<a href={ templ.SafeURL(ph.PageURL) } style={ vtPhoto(ph) } hx-get={ photoDetailURL(ph.ID, gallery.Filter) } hx-target="#photo-modal" hx-swap="innerHTML" class="relative overflow-hidden border border-line no-underline block bg-tile hover:opacity-85">
 						<img src={ templ.SafeURL(ph.SmallURL) } srcset={ ph.SmallURL + " 640w, " + ph.LargeURL + " 1600w" } sizes="(min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw" width={ fmt.Sprint(ph.Width) } height={ fmt.Sprint(ph.Height) } alt={ ph.Title } loading="lazy" class="block w-full h-auto"/>
-						<span class="absolute left-0 right-0 bottom-0 py-2.5 px-3 bg-[linear-gradient(transparent,rgba(12,12,10,.72))] font-mono text-[11.5px] text-code-bright">{ ph.Title }</span>
+						<span class="absolute left-0 right-0 bottom-0 py-2.5 px-3 bg-[linear-gradient(transparent,rgba(12,12,10,.72))] font-mono text-[11.5px] text-[#cbc6ba]">{ ph.Title }</span>
 					</a>
 				}
 			</div>

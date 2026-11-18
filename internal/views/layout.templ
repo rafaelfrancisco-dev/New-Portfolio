@@ -2,7 +2,7 @@ package views
 
 import "go-port/internal/db"
 
-// Layout wraps every page: dark shell, terminal-style header with the current
+// Layout wraps every page: light/dark shell (follows the OS), terminal-style header with the current
 // "path", nav with the active section highlighted, and the contact footer.
 templ Layout(settings db.SiteSetting, title string, path string, active string) {
 	<!DOCTYPE html>
@@ -10,6 +10,7 @@ templ Layout(settings db.SiteSetting, title string, path string, active string) 
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="color-scheme" content="light dark"/>
 			<title>{ title }</title>
 			<meta name="description" content={ settings.SiteDescription }/>
 			<meta property="og:type" content="website"/>

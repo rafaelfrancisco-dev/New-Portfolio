@@ -72,24 +72,51 @@
 	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* Design tokens from the portfolio mockup. */
+/* Design tokens. Light is the base palette; the original dark mockup
+   palette takes over when the OS prefers dark. Pure CSS — no toggle, no JS. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
 @theme {
 	--font-sans: "IBM Plex Sans", Helvetica, sans-serif;
 	--font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-	--color-bg: #191917;
-	--color-panel: #111110;
-	--color-line: #2e2d29;
-	--color-line-soft: #232220;
-	--color-line-strong: #3a3934;
-	--color-ink: #e9e6df;
-	--color-muted: #b5afa2;
-	--color-faint: #7d786d;
-	--color-code: #c9c4b8;
-	--color-code-bright: #cbc6ba;
-	--color-warm: #c08a72;
-	--color-tile-a: #22211e;
-	--color-tile-b: #282723;
+	--color-bg: #f4f2ec;
+	--color-panel: #ebe8e0;
+	--color-line: #d8d4c9;
+	--color-line-soft: #e4e1d8;
+	--color-line-strong: #c4bfb2;
+	--color-ink: #1d1c19;
+	--color-muted: #57534a;
+	--color-faint: #69645a;
+	--color-code: #3d3a33;
+	--color-code-bright: #2c2a25;
+	--color-warm: #93573d;
+	--color-tile-a: #e6e3db;
+	--color-tile-b: #ddd9cf;
+}
+
+@layer base {
+	:root {
+		color-scheme: light dark;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-bg: #191917;
+		--color-panel: #111110;
+		--color-line: #2e2d29;
+		--color-line-soft: #232220;
+		--color-line-strong: #3a3934;
+		--color-ink: #e9e6df;
+		--color-muted: #b5afa2;
+		--color-faint: #7d786d;
+		--color-code: #c9c4b8;
+		--color-code-bright: #cbc6ba;
+		--color-warm: #c08a72;
+		--color-tile-a: #22211e;
+		--color-tile-b: #282723;
+	}
 }
 
 /* Striped placeholder tile used wherever a photo has not loaded. */
