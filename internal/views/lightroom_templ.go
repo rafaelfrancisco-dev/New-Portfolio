@@ -53,11 +53,11 @@ func LightroomPage(plugins []content.Plugin, settings db.SiteSetting) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("04 — LIGHTROOM").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("04 - LIGHTROOM").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Plug-ins</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Two plug-ins for Lightroom Classic on macOS. Everything runs on your Mac — no account, no upload, no API key. Free and open source.</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Lightroom Classic plug-ins</h1><p class=\"m-0 text-base leading-[1.65] text-muted max-w-[62ch] text-pretty\">Two plug-ins for Lightroom Classic on macOS. Everything runs on your Mac - no account, no upload, no API key. Free and open source.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -77,7 +77,7 @@ func LightroomPage(plugins []content.Plugin, settings db.SiteSetting) templ.Comp
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — Lightroom", "~/lightroom", "lightroom").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" - Lightroom", "~/lightroom", "lightroom").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -460,7 +460,7 @@ func installSteps() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><p class=\"m-0 text-[13.5px] leading-[1.6] text-faint max-w-[62ch]\">The helpers are signed with a Developer ID certificate and notarized by Apple, with the ticket stapled to the bundle — no terminal step, no Gatekeeper warning, and it works the first time even if you are offline.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><p class=\"m-0 text-[13.5px] leading-[1.6] text-faint max-w-[62ch]\">The helpers are signed with a Developer ID certificate and notarized by Apple, with the ticket stapled to the bundle. No terminal commands or Gatekeeper warnings, and it works the first time even offline.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

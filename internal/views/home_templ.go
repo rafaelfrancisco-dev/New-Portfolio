@@ -52,7 +52,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("01 — SOFTWARE").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("01 - SOFTWARE").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -80,7 +80,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("02 — PHOTOGRAPHY").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("02 - PHOTOGRAPHY").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -185,7 +185,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<a href=\"/photography\" class=\"flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile flex items-center justify-center border border-line no-underline hover:opacity-85\"><span class=\"font-mono text-xs text-faint\">[ photo — red kite in flight ]</span></a>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<a href=\"/photography\" class=\"flex-1 min-h-[220px] mx-6 md:mx-11 bg-tile flex items-center justify-center border border-line no-underline hover:opacity-85\"><span class=\"font-mono text-xs text-faint\">[ photo - red kite in flight ]</span></a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -194,7 +194,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("03 — JOURNAL").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("03 - JOURNAL").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -203,7 +203,7 @@ func HomePage(posts []db.Post, settings db.SiteSetting, photo flickr.Photo, hasP
 				return templ_7745c5c3_Err
 			}
 			if len(posts) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"text-muted text-[15.5px] py-[11px]\">No journal entries yet — check back soon.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<p class=\"text-muted text-[15.5px] py-[11px]\">Nothing here yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

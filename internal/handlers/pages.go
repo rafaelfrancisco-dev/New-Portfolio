@@ -219,7 +219,7 @@ func (rs Resource) journalFeed(w http.ResponseWriter, r *http.Request) {
 	feed := rssFeed{
 		Version: "2.0",
 		Channel: rssChannel{
-			Title:       settings.DisplayName + " — Journal",
+			Title:       settings.DisplayName + " - Journal",
 			Link:        base + "/journal",
 			Description: settings.JournalDescription,
 		},

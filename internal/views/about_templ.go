@@ -47,11 +47,11 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("05 — ABOUT").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("05 - ABOUT").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Olá, I'm Rafael.</h1><p class=\"m-0 text-[17px] leading-[1.7] text-muted max-w-[60ch] text-pretty\">I'm a software developer from Lousã, near Coimbra, Portugal. I've been building native mobile apps since 2016 — currently as Mobile Tech Lead at Eneida, where I manage the mobile portfolio for Smart Grid field tools. Evenings and weekends belong to my own apps and to a camera bag that's always slightly too heavy.</p></div><div class=\"flex flex-col gap-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"m-0 text-[38px] font-semibold tracking-[-.01em]\">Olá, I'm Rafael.</h1><p class=\"m-0 text-[17px] leading-[1.7] text-muted max-w-[60ch] text-pretty\">I'm a software developer from Lousã, near Coimbra, Portugal. I've been building native mobile apps since 2016 and I'm currently Mobile Tech Lead at Eneida, where I manage the mobile apps for Smart Grid field tools. In my free time I work on my own apps and take photos, usually with a camera bag that's a little bit too heavy.</p></div><div class=\"flex flex-col gap-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -63,19 +63,19 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = experienceRow("2023 — now", "Mobile Tech Lead", "Eneida W&S — managing the mobile app portfolio, architecture and tech choices.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = experienceRow("2023 - now", "Mobile Tech Lead", "Eneida W&S - lead development of the mobile apps, including architecture and technology choices.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = experienceRow("2021 — 2023", "Mobile Software Engineer", "Eneida W&S — B2B iOS & Android apps for Smart Grid sensors; client analytics dashboard.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = experienceRow("2021 - 2023", "Mobile Software Engineer", "Eneida W&S - B2B iOS and Android apps for Smart Grid sensors, plus a client analytics dashboard.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = experienceRow("2018 — 2020", "Software Developer", "Andi Technologies — internal tools and commercial projects across platforms.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = experienceRow("2018 - 2020", "Software Developer", "Andi Technologies - internal tools and client projects on several platforms.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = experienceRow("2016 — 2021", "iOS Developer", "YouShip — Objective-C & Swift; Apple Watch extension grown into a full app rewrite.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = experienceRow("2016 - 2021", "iOS Developer", "YouShip - Objective-C and Swift, from an Apple Watch extension to a full rewrite of the app.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -87,7 +87,7 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português — native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English — C2</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español — B1</span></div></div></div><aside class=\"flex flex-col\"><div class=\"py-12 px-6 md:px-[34px] flex flex-col gap-[18px]\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"flex gap-2.5 flex-wrap font-mono text-[12.5px] text-muted\"><span class=\"border border-line-strong rounded px-[11px] py-1.5\">Português - native</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">English - C2</span> <span class=\"border border-line-strong rounded px-[11px] py-1.5\">Español - B1</span></div></div></div><aside class=\"flex flex-col\"><div class=\"py-12 px-6 md:px-[34px] flex flex-col gap-[18px]\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -221,13 +221,13 @@ func AboutPage(settings db.SiteSetting) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><p class=\"m-0 text-[13.5px] leading-[1.6] text-faint\">Interested in a print? Email me — most gallery photos are available in A3 and A2.</p></div></aside></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><p class=\"m-0 text-[13.5px] leading-[1.6] text-faint\">Most gallery photos are available as A3 and A2 prints. Email me if you want one.</p></div></aside></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — About", "~/about", "about").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" - About", "~/about", "about").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

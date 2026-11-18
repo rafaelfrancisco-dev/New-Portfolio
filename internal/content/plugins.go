@@ -28,7 +28,7 @@ var Plugins = []Plugin{
 			"Each published collection maps to an album; republishing updates it in place.",
 			"Exports JPEG, JPEG XL or AVIF, with the usual export controls.",
 			"Flags and star ratings carry over as favorites in Photos.",
-			"Publishes in batches of 32; one bad file doesn't stop the run.",
+			"Publishes in batches of 32, and one bad file doesn't stop the rest.",
 		},
 		Requires: []string{
 			"macOS 13 or newer (JPEG XL needs 14)",
@@ -44,12 +44,12 @@ var Plugins = []Plugin{
 		Name:    "Vision Keywords",
 		Icon:    "vision",
 		Version: "1.1.0",
-		Tagline: "Keywords photos with Apple's on-device Vision classifier — the one behind search in Photos.",
+		Tagline: "Adds keywords to photos using Apple's on-device Vision classifier, the same one behind search in Photos.",
 		Features: []string{
-			"Reads Lightroom's embedded previews, so nothing needs exporting first. RAW included.",
-			"A few hundred photos a minute across roughly 1,300 labels.",
+			"Reads Lightroom's embedded previews, so nothing needs to be exported first (RAW files included).",
+			"Processes a few hundred photos a minute, with around 1,300 possible labels.",
 			"Nests everything under an AI keyword that's excluded from export.",
-			"Tune confidence, cap keywords per photo, deny labels. One menu item undoes it all.",
+			"You can set the confidence threshold, limit keywords per photo and block labels. One menu item removes everything it added.",
 		},
 		Requires: []string{
 			"macOS 10.15 or newer",

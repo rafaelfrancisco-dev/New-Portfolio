@@ -51,16 +51,16 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("03 — JOURNAL").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("03 - JOURNAL").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"mt-0 mb-2.5 text-[38px] font-semibold tracking-[-.01em]\">Notes from the field &amp; the desk</h1><div class=\"flex flex-col\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<h1 class=\"mt-0 mb-2.5 text-[38px] font-semibold tracking-[-.01em]\">Notes from the field and the desk</h1><div class=\"flex flex-col\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if len(posts) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"text-muted text-[15px] py-6 border-t border-line\">No journal entries yet — check back soon.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<p class=\"text-muted text-[15px] py-6 border-t border-line\">Nothing here yet.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -256,14 +256,14 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, " — ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, " - ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(y.Count, 10))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 54, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 54, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 				if templ_7745c5c3_Err != nil {
@@ -276,7 +276,7 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(pluralPosts(y.Count))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 54, Col: 85}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/views/journal.templ`, Line: 54, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {
@@ -287,13 +287,13 @@ func JournalPage(posts []db.Post, filter string, years []db.CountPostsByYearRow,
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div></div><div class=\"flex flex-col gap-2 border border-line rounded-md p-4\"><span class=\"font-mono font-medium text-xs tracking-[.1em] text-faint\">RSS</span> <span class=\"text-[13.5px] leading-[1.5] text-muted\">Follow in your reader of choice.</span> <a href=\"/journal/feed.xml\" class=\"font-mono font-semibold text-[12.5px] text-ink no-underline hover:opacity-85\">/journal/feed.xml →</a></div></aside></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div></div><div class=\"flex flex-col gap-2 border border-line rounded-md p-4\"><span class=\"font-mono font-medium text-xs tracking-[.1em] text-faint\">RSS</span> <span class=\"text-[13.5px] leading-[1.5] text-muted\">Subscribe in any RSS reader.</span> <a href=\"/journal/feed.xml\" class=\"font-mono font-semibold text-[12.5px] text-ink no-underline hover:opacity-85\">/journal/feed.xml →</a></div></aside></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — Journal", "~/journal", "journal").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" - Journal", "~/journal", "journal").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

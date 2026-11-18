@@ -53,7 +53,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = SectionLabel("02 — PHOTOGRAPHY").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = SectionLabel("02 - PHOTOGRAPHY").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -81,12 +81,12 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><p class=\"m-0 text-[15px] text-muted max-w-[62ch]\">A random assortment of pictures</p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><p class=\"m-0 text-[15px] text-muted max-w-[62ch]\">Wildlife and landscapes, mostly from Portugal.</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if !gallery.Available {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"mx-6 md:mx-11 mb-11 border border-line rounded p-7 bg-panel\"><h2 class=\"mt-0 text-xl font-semibold\">Photography is temporarily unavailable</h2><p class=\"mb-0 text-muted\">The Flickr gallery has not synchronized recently enough to display. Please check back soon.</p></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"mx-6 md:mx-11 mb-11 border border-line rounded p-7 bg-panel\"><h2 class=\"mt-0 text-xl font-semibold\">Photography is temporarily unavailable</h2><p class=\"mb-0 text-muted\">The gallery comes from Flickr and it hasn't synced recently. Try again later.</p></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -282,7 +282,7 @@ func PhotographyPage(gallery flickr.Gallery, settings db.SiteSetting) templ.Comp
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" — Photography", "~/photography", "photography").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(settings, settings.DisplayName+" - Photography", "~/photography", "photography").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -679,7 +679,7 @@ func exifRow(key string, value string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<span>—</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<span>-</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
